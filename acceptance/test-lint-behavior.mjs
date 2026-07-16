@@ -204,9 +204,11 @@ expect('LB-M-readme-order a spec section out of the spec\'s order reddens RS-rea
 expect('LB-M-readme-toc a 100+ line README with no Table of Contents reddens RS-readme',
   (f) => { f['README.md'] = f['README.md'].replace('## Caveats', `${'\n<!-- padding -->'.repeat(100)}\n\n## Caveats`) }, 1,
   '✗ RS-readme', 'Table of Contents')
-expect('LB-M-readme-longdesc a short description over 120 characters reddens RS-readme',
+expect('LB-M-readme-longdesc a short description of 120+ characters reddens RS-readme',
   (f) => { f['README.md'] = f['README.md'].replace('**A test fixture repo for the repo-standard lint.**', `**${'A very long tagline that runs on and on well past the specification limit for a short description. '.repeat(2)}**`) }, 1,
-  '✗ RS-readme', 'under 120 characters')
+  '✗ RS-readme', 'less than 120 characters')
+expect('LB-S-readme-desc-boundary a 119-char description stays green; the bold markers do not count toward the limit',
+  (f) => { f['README.md'] = f['README.md'].replace('**A test fixture repo for the repo-standard lint.**', `**${'x'.repeat(119)}**`) }, 0)
 expect('LB-M-conventions-gap a numbering gap reddens RS-conventions',
   (f) => { f['CONVENTIONS.md'] = f['CONVENTIONS.md'].replace('## 3. Meta docs standard', '## 4. Meta docs standard') }, 1,
   '✗ RS-conventions', 'numbering breaks')
@@ -293,7 +295,39 @@ expect('LB-S-quoted naming a banned word in quotes stays green (a mention is not
 expect('LB-S-fenced a banned word inside a fenced code block stays green',
   (f) => { f['README.md'] = f['README.md'].replace('Clone it.', 'Clone it.\n\n```\nexample: seamless\n```') }, 0)
 
+// ── real-world markdown the lint must NOT false-fail (each was a confirmed review finding) ──
+expect('LB-S-bom a UTF-8 BOM on the meta docs does not fail a compliant repo',
+  (f) => { for (const d of ['README.md', 'CHANGELOG.md', 'CONVENTIONS.md', 'SECURITY.md']) f[d] = '﻿' + f[d] }, 0)
+expect('LB-S-tilde-fence a CommonMark ~~~ fence hides its contents from the prose checks',
+  (f) => { f['README.md'] = f['README.md'].replace('This repo has 3 widget', '~~~text\nWIDGET\n======\nRun simply with --help\n~~~\n\nThis repo has 3 widget') }, 0)
+expect('LB-S-html-banner the centered `<p align="center">` banner idiom does not hide the tagline',
+  (f) => { f['README.md'] = f['README.md'].replace('**A test fixture repo', '<p align="center">\n  <img src="logo.png" alt="fixture">\n</p>\n\n**A test fixture repo') }, 0)
+expect('LB-S-html-comment an "=" rule inside an HTML comment is not a setext heading',
+  (f) => { f['README.md'] = f['README.md'].replace('## Contributing', '<!--\nmaintainer note\n==============\nkeep in sync\n-->\n\n## Contributing') }, 0)
+expect('LB-S-manifest-padded a column-aligned manifest table reconciles exactly like a compact one',
+  (f) => { f['MANIFEST.md'] = f['MANIFEST.md'].replace('| `a` | UNCHANGED | x |', '| `a` | UNCHANGED | x |').replace(/\| `b` \| NEW \| x \|/, '| `b` | NEW       | x |').replace(/\| `c` \| NEW \| x \|/, '| `c` | NEW       | x |') }, 0)
+expect('LB-M-manifest-padded-drift a padded table with a WRONG Totals line still reddens (the fix did not blind the check)',
+  (f) => { f['MANIFEST.md'] = f['MANIFEST.md'].replace(/\| `b` \| NEW \| x \|/, '| `b` | NEW       | x |').replace('**1 UNCHANGED · 2 NEW · 3 total.**', '**1 UNCHANGED · 5 NEW · 6 total.**') }, 1,
+  '✗ RS-manifest', 'the table has 2')
+expect('LB-M-changelog-prerelease-chain an out-of-order rc chain (rc.9 above rc.1) reddens RS-changelog (semver §11)',
+  (f) => {
+    f['CHANGELOG.md'] = f['CHANGELOG.md'].replace('## [1.2.3] — 2026-01-01', '## [1.2.3-rc.1] - 2025-11-01\n\n### Added\n\n- first rc\n\n## [1.2.3-rc.9] - 2025-12-01\n\n### Added\n\n- ninth rc\n\n## [1.2.3] — 2026-01-01')
+  }, 1,
+  '✗ RS-changelog', 'must descend')
+
 // ───────────────────────────────────────────────────────── config-error class (exit 2)
+expect('LB-C-docs-type a non-string docs.changelog is a config error, not a crash',
+  (f) => editConfig(f, (c) => { c.docs = { changelog: 5 } }), 2,
+  '"docs.changelog" must be a string path', 'doc checks not run')
+expect('LB-C-badglob a non-string counts glob is a config error (exit 2), not a doc failure',
+  (f) => editConfig(f, (c) => { c.counts.widgets.glob = 7 }), 2,
+  '"counts.widgets.glob" must be a string pattern')
+expect('LB-C-badlineregex an uncompilable counts lineRegex is a config error (exit 2), not a doc failure',
+  (f) => editConfig(f, (c) => { c.counts.rows.lineRegex = '^row:[' }), 2,
+  'does not compile')
+expect('LB-C-badrequire an uncompilable readme.requireSections entry is a config error (exit 2)',
+  (f) => editConfig(f, (c) => { c.readme.requireSections = ['caveat['] }), 2,
+  'does not compile')
 expect('LB-C-unknown-key an unknown top-level config key exits 2 and names it (doc checks not run)',
   (f) => editConfig(f, (c) => { c.cheks = {} }), 2,
   'unknown top-level key "cheks"', 'doc checks not run')

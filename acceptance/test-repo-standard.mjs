@@ -73,11 +73,15 @@ let pass = 0, fail = 0, skip = 0
 const check = (name, fn) => { try { fn(); pass++; console.log(`  ✓ ${name}`) } catch (e) { fail++; console.log(`  ✗ ${name}\n    ${e.message}`) } }
 const skipCheck = (name, why) => { skip++; console.log(`  – ${name} SKIP (${why})`) }
 
-const read = (rel) => readFileSync(join(ROOT, rel), 'utf8')
+// a UTF-8 BOM is legal, invisible on GitHub, and the default from several Windows editors — it
+// must never be the reason a compliant doc fails a `^#`-anchored check.
+const read = (rel) => readFileSync(join(ROOT, rel), 'utf8').replace(/^﻿/, '')
 const exists = (rel) => existsSync(join(ROOT, rel))
-// markdown with fenced code blocks removed — a `### x` or banned word inside a ```block``` is
-// example text, never a heading or a voice violation.
-const stripFences = (text) => text.replace(/```[\s\S]*?```/g, '')
+// markdown with fenced code blocks removed — a `### x` or banned word inside a fence is example
+// text, never a heading or a voice violation. CommonMark §4.5: a fence is three-or-more
+// backticks OR tildes (the tilde form is how you show a block containing backticks).
+const FENCE_LINE = /^\s*(?:```|~~~)/
+const stripFences = (text) => text.replace(/^[ \t]*(```|~~~)[\s\S]*?^[ \t]*\1[^\n]*$/gm, '').replace(/^[ \t]*(```|~~~)[\s\S]*$/m, '')
 const h2s = (text) => [...text.matchAll(/^## +(.+?)\s*$/gm)].map((m) => m[1])
 
 // minimal glob: literal directory path + one basename with `*` wildcards (e.g.
@@ -139,6 +143,11 @@ const DOC = {
 if (!['README.md', 'docs/README.md', '.github/README.md'].includes(DOC.readme)) {
   bad(`"docs.readme" must be one of README.md, docs/README.md, .github/README.md (the paths GitHub renders) — got "${DOC.readme}"`)
 }
+// a non-string path is a CONFIG error (exit 2), not a crash at the first fs call: the ?? default
+// only guards absent, never wrong-typed.
+for (const k of ['changelog', 'conventions']) {
+  if (typeof DOC[k] !== 'string') bad(`"docs.${k}" must be a string path — got ${JSON.stringify(docsCfg[k])}`)
+}
 const extraDocs = strArray(docsCfg.extra, 'docs.extra')
 
 // manifest: false (default — no manifest doc) or { file, statuses }
@@ -159,8 +168,14 @@ if (versionManifest !== undefined && versionManifest !== false && typeof version
   bad('"versionManifest" must be false, a path string, or { file, match }')
   versionManifest = false
 }
+if (typeof versionManifest === 'object' && versionManifest !== null) {
+  try { new RegExp(versionManifest.match, 'm') } catch (e) { bad(`"versionManifest.match" does not compile: ${e.message}`) }
+}
 
 const requireSections = strArray(readmeCfg.requireSections, 'readme.requireSections')
+for (const req of requireSections) {
+  try { new RegExp(req, 'i') } catch (e) { bad(`"readme.requireSections" entry "${req}" does not compile: ${e.message}`) }
+}
 // the spec's OWN exception, not a weakening: a documentation repository ("repositories without
 // any functional code") may omit Install/Usage. Everything else still applies.
 const docsOnly = readmeCfg.docsOnly ?? false
@@ -194,6 +209,14 @@ else {
     const hasGlob = spec.glob !== undefined, hasFile = spec.file !== undefined || spec.lineRegex !== undefined
     if (hasGlob && hasFile) { bad(`"counts.${id}" declares both glob and file/lineRegex — pick one source`); continue }
     if ((spec.file === undefined) !== (spec.lineRegex === undefined)) { bad(`"counts.${id}" needs both file and lineRegex, or neither`); continue }
+    // validate every sibling HERE, so a malformed one is a config error (exit 2) rather than an
+    // exception surfacing later as a doc-drift failure (exit 1) and blaming the wrong file.
+    if (spec.glob !== undefined && typeof spec.glob !== 'string') { bad(`"counts.${id}.glob" must be a string pattern`); continue }
+    if (spec.file !== undefined && typeof spec.file !== 'string') { bad(`"counts.${id}.file" must be a string path`); continue }
+    if (spec.lineRegex !== undefined) {
+      if (typeof spec.lineRegex !== 'string') { bad(`"counts.${id}.lineRegex" must be a regex string`); continue }
+      try { new RegExp(spec.lineRegex, 'gm') } catch (e) { bad(`"counts.${id}.lineRegex" does not compile: ${e.message}`); continue }
+    }
     if (spec.minMentions !== undefined && (!Number.isInteger(spec.minMentions) || spec.minMentions < 1)) bad(`"counts.${id}.minMentions" must be an integer >= 1`)
     let underRe = null
     if (spec.under !== undefined) {
@@ -260,12 +283,29 @@ gate('changelog', `RS-changelog ${DOC.changelog} follows Keep a Changelog: [Unre
   }
   for (const v of clVersions) assert.match(v, SEMVER, `version heading "[${v}]" is not valid semver`)
   assert.equal(new Set(clVersions).size, clVersions.length, `${DOC.changelog} repeats a version heading — one section per version (Keep a Changelog)`)
-  // descending order; on an equal numeric triple, a prerelease is OLDER than its release
+  // descending order, per semver §11: compare the numeric triple, then a prerelease is OLDER
+  // than its release, then compare prerelease identifiers left to right (numeric numerically,
+  // alphanumeric by ASCII, numeric < alphanumeric, and a longer identifier list wins a tie) —
+  // an rc.1 / rc.9 / beta.1 chain is exactly where changelog ordering drifts.
+  const cmpPre = (a, b) => {
+    const ia = a.split('.'), ib = b.split('.')
+    for (let i = 0; i < Math.max(ia.length, ib.length); i++) {
+      if (ia[i] === undefined) return -1
+      if (ib[i] === undefined) return 1
+      const na = /^\d+$/.test(ia[i]), nb = /^\d+$/.test(ib[i])
+      if (na && nb) { const d = Number(ia[i]) - Number(ib[i]); if (d) return d < 0 ? -1 : 1; continue }
+      if (na !== nb) return na ? -1 : 1
+      if (ia[i] !== ib[i]) return ia[i] < ib[i] ? -1 : 1
+    }
+    return 0
+  }
   const cmp = (a, b) => {
     const pa = a.split('-')[0].split('.').map(Number), pb = b.split('-')[0].split('.').map(Number)
     for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pa[i] - pb[i]
     const preA = a.includes('-'), preB = b.includes('-')
-    return preA === preB ? 0 : preA ? -1 : 1
+    if (preA !== preB) return preA ? -1 : 1
+    if (!preA) return 0
+    return cmpPre(a.slice(a.indexOf('-') + 1), b.slice(b.indexOf('-') + 1))
   }
   for (let i = 1; i < clVersions.length; i++) assert.ok(cmp(clVersions[i - 1], clVersions[i]) >= 0, `versions must descend (newest first): [${clVersions[i - 1]}] appears before [${clVersions[i]}]`)
   // the six canonical categories, grouped, one heading per category per version block —
@@ -317,7 +357,9 @@ if (lockstepPath === null) {
 // ────────────────────────────────────────────────────────────────────────── RS-readme
 gate('readme', `RS-readme ${DOC.readme} structure — one H1, bold tagline, Install + Contributing, License LAST`, () => {
   assert.ok(exists(DOC.readme), `${DOC.readme} must exist`)
-  const rm = stripFences(read(DOC.readme))
+  // HTML comments come out alongside fences: a maintainer note renders as nothing, so it can
+  // hold neither a hidden heading nor the short description.
+  const rm = stripFences(read(DOC.readme)).replace(/<!--[\s\S]*?-->/g, '')
   // setext headings would let content render as a heading this ATX-based lint cannot see —
   // require ATX so what the lint checks is what GitHub renders. ('='-underline is unambiguous;
   // the '-' form is left alone: it collides with tables and frontmatter.)
@@ -330,15 +372,21 @@ gate('readme', `RS-readme ${DOC.readme} structure — one H1, bold tagline, Inst
   // standard-readme's order is Title → Banner (optional) → Badges (optional) → Short
   // Description, so image/badge lines between the H1 and the description are CANONICAL — skip
   // them rather than mistaking one for the description.
-  const isBadgeOrBanner = (l) => /^\[!\[.*\]\(.*\)\]\(.*\)$/.test(l) || /^!\[.*\]\(.*\)$/.test(l) || /^<img\s/.test(l) || /^(\[!\[|!\[).*(\)|\])\s*(\[!\[|!\[).*$/.test(l)
-  const afterH1 = rm.slice(rm.indexOf(h1sFound[0][0]) + h1sFound[0][0].length).split('\n').map((l) => l.trim())
-    .filter((l) => l && !l.startsWith('<!--') && !isBadgeOrBanner(l))[0] || ''
+  // the banner/badge run between the Title and the Short Description — badge links, images, and
+  // the HTML wrappers the centered-banner idiom uses (`<p align="center">` … `</p>`).
+  const isBadgeOrBanner = (l) => /^\[!\[.*\]\(.*\)\]\(.*\)$/.test(l) || /^!\[.*\]\(.*\)$/.test(l)
+    || /^(\[!\[|!\[).*(\)|\])\s*(\[!\[|!\[).*$/.test(l) || /^<\/?[a-z][^>]*>$/i.test(l) || /^<img\s/.test(l)
+  const afterH1 = rm.slice(h1sFound[0].index + h1sFound[0][0].length).split('\n').map((l) => l.trim())
+    .filter((l) => l && !isBadgeOrBanner(l))[0] || ''
   // The spec requires a short description on its own line that does not start with "> ".
   // The BOLD is this standard's own house addition on top of the spec (a tagline should read
   // as one), documented as such — not attributed to standard-readme.
   assert.ok(!afterH1.startsWith('>'), `${DOC.readme}: the short description under the H1 must not be a blockquote (standard-readme) — found: "${afterH1.slice(0, 60)}"`)
   assert.ok(afterH1.startsWith('**'), `${DOC.readme} needs a bold tagline (the short description) right after the H1 — house addition on top of standard-readme (found: "${afterH1.slice(0, 60)}")`)
-  assert.ok(afterH1.length <= 130, `${DOC.readme}: the short description must be under 120 characters (standard-readme) — found ${afterH1.length}`)
+  // standard-readme: "Must be less than 120 characters." Measured on the description itself,
+  // not the `**` bold markers this standard adds around it.
+  const descLen = afterH1.replace(/^\*\*|\*\*$/g, '').length
+  assert.ok(descLen < 120, `${DOC.readme}: the short description must be less than 120 characters (standard-readme) — found ${descLen}`)
   const sections = h2s(rm)
   assert.ok(sections.length > 0, `${DOC.readme} must have H2 sections`)
   const canon = docsOnly ? README_CANON_DOCS_ONLY : README_CANON
@@ -390,13 +438,15 @@ if (!manifestCfg) {
   const nums = m.slice(1).map((n) => Number(n.replace(/,/g, '')))
   const total = nums.pop()
   // only TABLE rows count: a line must start with '|' to be a row — prose that happens to
-  // contain "| NEW |" mid-sentence is not inventory.
+  // contain "| NEW |" mid-sentence is not inventory. Cells are compared parsed-and-trimmed, so
+  // a column-aligned table (`| NEW       |` — what every markdown formatter emits, and what
+  // GitHub renders identically) counts the same as a compact one.
   const rowLines = cm.split('\n').filter((l) => l.trimStart().startsWith('|'))
+  const cellsOf = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim())
   let sum = 0
   statuses.forEach((s, i) => {
-    const cell = `| ${s} |`
-    const rows = rowLines.filter((l) => l.includes(cell)).length
-    assert.equal(nums[i], rows, `Totals says ${nums[i]} ${s} but the table has ${rows} \`| ${s} |\` rows`)
+    const rows = rowLines.filter((l) => cellsOf(l).includes(s)).length
+    assert.equal(nums[i], rows, `Totals says ${nums[i]} ${s} but the table has ${rows} \`${s}\` rows`)
     sum += rows
   })
   assert.equal(total, sum, `Totals total ${total} != the row sum ${sum}`)
@@ -409,7 +459,7 @@ gate('voice', 'RS-voice the marketing-voice ban holds across the meta-doc set', 
     if (!exists(doc)) continue // presence is each structural check's job; voice scans what exists
     let inFence = false
     read(doc).split('\n').forEach((line, i) => {
-      if (/^\s*```/.test(line)) { inFence = !inFence; return }
+      if (FENCE_LINE.test(line)) { inFence = !inFence; return }
       if (inFence) return
       // strip quoted / backticked spans — a doc may NAME a banned word ("no \"simply\"")
       // without USING it; a real marketing use is unquoted prose. Single quotes strip only
@@ -497,7 +547,7 @@ gate('todos', 'RS-todos no TODO(scaffold) marker survives in a governed doc', ()
     if (!exists(doc)) continue
     let inFence = false
     read(doc).split('\n').forEach((line, i) => {
-      if (/^\s*```/.test(line)) { inFence = !inFence; return }
+      if (FENCE_LINE.test(line)) { inFence = !inFence; return }
       if (inFence) return
       // same mention-vs-use rule as the voice ban: NAMING the marker in backticks/quotes
       // (docs about the scaffolder do) is not an unfinished scaffold. The match is
