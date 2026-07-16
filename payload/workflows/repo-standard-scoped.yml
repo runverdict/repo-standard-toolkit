@@ -1,0 +1,16 @@
+name: acceptance
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      # Scoped gate: pre-existing acceptance tests were red when the standard was installed, so
+      # this workflow runs only the repo-standard lint (a gate must not be born red on someone
+      # else's tests). Once those tests are green, re-run the scaffold skill to upgrade this
+      # file to the full-suite gate (repo-standard.yml).
+      - run: node acceptance/test-repo-standard.mjs

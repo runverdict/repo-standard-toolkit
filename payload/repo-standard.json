@@ -1,0 +1,43 @@
+{
+  "//": "Scope config for acceptance/test-repo-standard.mjs — the committed repo-hygiene lint.",
+  "//about": "The CANON (six Keep a Changelog categories, standard-readme structure with License last, the voice ban) is hardcoded in the lint; this file tunes SCOPE only. Keys starting with // are operator comments; unknown keys are hard errors. Deleting this file still runs the full canon, but with the lint's laxer built-in scope (no counts, no extra sections, minSections 1) — this shipped file IS the stricter house default.",
+  "version": 1,
+
+  "//docs": "Paths of the governed meta docs. 'extra' adds more files to the voice/count sweeps.",
+  "docs": {
+    "readme": "README.md",
+    "changelog": "CHANGELOG.md",
+    "conventions": "CONVENTIONS.md",
+    "extra": []
+  },
+
+  "//manifest": "A provenance/inventory doc whose Totals line must reconcile with its own table rows, e.g. { \"file\": \"COPY-MANIFEST.md\", \"statuses\": [\"UNCHANGED\", \"MODIFIED\", \"NEW\"] }. false = this repo has none (the check prints SKIP, never a silent pass).",
+  "manifest": false,
+
+  "//versionManifest": "Where the released version lives, for the CHANGELOG lockstep. Omit to auto-detect (.claude-plugin/plugin.json, then package.json); a path string for a JSON manifest with .version; { \"file\": ..., \"match\": \"regex with one capture\" } for non-JSON; false if the repo has no version manifest.",
+
+  "//readme": "Extra required README sections beyond the hardcoded canon, as case-insensitive regexes over H2 headings. The scaffolder ships the full standard-readme + honesty shape.",
+  "readme": {
+    "requireSections": ["usage", "caveat|limitation"]
+  },
+
+  "//conventions": "The `## N.` contiguity rule is hardcoded; minSections is an anti-gutting floor.",
+  "conventions": {
+    "minSections": 3
+  },
+
+  "//voice": "extraBanned appends to the hardcoded marketing-ban list (each extra term must also be documented in CONVENTIONS — the reflexivity check enforces that). alsoScan widens the sweep.",
+  "voice": {
+    "extraBanned": [],
+    "alsoScan": []
+  },
+
+  "//counts": "Machine-checked numeric claims, keyed by a stable id. Each: pattern (regex, group 1 captures the number), and a source of truth — glob (literal dirs + '*' in the basename only) or file+lineRegex — or neither for cross-doc-agreement-only numbers. Optional docs (default: the whole meta-doc set) and minMentions. Declare a count ONLY when the repo actually states it in prose.",
+  "counts": {},
+
+  "//stableDocs": "Rarely-changing meta files that must exist and open with an H1. Replacing this list is a visible weakening — think before shrinking it.",
+  "stableDocs": ["SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md"],
+
+  "//checks": "The only off switch, per check id, and it is loud: { \"<id>\": { \"enabled\": false, \"why\": \"<reason printed on every run>\" } }. Ids: changelog, lockstep, readme, conventions, manifest, voice, counts, reflexivity, stable-docs, todos.",
+  "checks": {}
+}
