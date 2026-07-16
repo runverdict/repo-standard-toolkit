@@ -8,7 +8,7 @@ Claude.
 
 > **Status: built, pre-first-release.** The plugin version is `0.1.0`; the first tag is cut
 > after field runs against real repos. Everything below describes what exists and is
-> test-guarded in this tree — 9 standing tests, zero npm dependencies, and the repo governs
+> test-guarded in this tree — 10 standing tests, zero npm dependencies, and the repo governs
 > itself with the exact lint it installs elsewhere.
 
 ## Table of Contents
@@ -19,6 +19,7 @@ Claude.
 - [The standards it embodies](#the-standards-it-embodies)
 - [Install](#install)
 - [Usage](#usage)
+- [The optional pre-push check](#the-optional-pre-push-check)
 - [The config](#the-config)
 - [Origin](#origin)
 - [Caveats](#caveats)
@@ -80,6 +81,9 @@ Into the target repo, all committed, all dependency-free:
   CODE_OF_CONDUCT, SECURITY, LICENSE — filled from `payload/templates/`, with every
   `TODO(scaffold)` marker resolved against the real repo before the gate lets them pass.
 
+Optionally, if you say yes when asked: a `pre-push` hook in `.git/hooks/` that runs the lint
+locally before each push. See [The optional pre-push check](#the-optional-pre-push-check).
+
 ## The standards it embodies
 
 Grounded in the published specs, not invented here:
@@ -135,6 +139,38 @@ installed workflow runs everywhere:
 ```bash
 for t in acceptance/test-*.mjs; do node "$t" || exit 1; done
 ```
+
+**It does not run on its own.** The plugin is invoked by you, once per repo, plus re-runs for
+reconcile or upgrade. Nothing watches your repos, and installing the plugin changes nothing
+about repos you never point it at. What runs automatically afterward is the CI gate — committed
+files in your repo, triggered by GitHub, with the plugin nowhere in the loop.
+
+## The optional pre-push check
+
+Once a repo is governed and green, the skill offers one convenience — and only if you say yes:
+
+```
+node ${CLAUDE_PLUGIN_ROOT}/harness/install-hook.mjs --target .
+```
+
+It installs `.git/hooks/pre-push`, which runs the repo-standard lint (and nothing else — your
+own test suite is your business) before each push, so drift fails in your terminal in a moment
+rather than in CI a minute later.
+
+**It is a convenience, not a gate**, and the design says so out loud: it is per-clone,
+uncommitted, skipped by `git push --no-verify`, and absent for anyone who clones fresh. That is
+exactly why it is installed *uncommitted* — committing it would imply it is part of the
+standard, and a hook can never be. The gate is the same lint, run by CI, which no one can skip.
+
+The engine refuses rather than surprising you: it never clobbers a pre-push hook it did not
+write, it reports instead of writing into `.git/hooks` when `core.hooksPath` points elsewhere
+(husky and friends), and it turns away an ungoverned repo. Remove it any time with
+`--uninstall`, or just `rm .git/hooks/pre-push`.
+
+There is deliberately **no push-time prompt asking whether to adopt the standard.** Adoption is
+a reviewed change to a repo's front matter; it deserves its own session and its own PR, not an
+interruption while you are shipping something else — and a prompt you dismiss on every push is
+just noise you have trained yourself to ignore.
 
 ## The config
 
@@ -198,7 +234,7 @@ mutation coverage in `acceptance/test-lint-behavior.mjs`.)
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow and
 [`CONVENTIONS.md`](CONVENTIONS.md) for the binding rules — the enforcement/generation split,
 the payload byte-identity discipline, and the rule that every determinizable property lands in
-a standing test (9 standing tests today; the pass is zero failures, never a fixed count). By
+a standing test (10 standing tests today; the pass is zero failures, never a fixed count). By
 participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License

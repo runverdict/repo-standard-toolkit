@@ -50,12 +50,23 @@ tag is cut.
 - `harness/fill-template.mjs` — deterministic placeholder fill: refuses an unfilled
   placeholder, an unused key, and an un-forced overwrite, so a scaffold can never be silently
   partial.
+- `harness/install-hook.mjs` + `payload/hooks/pre-push` — an **optional** local pre-push check,
+  offered (never assumed) once a repo is governed and green. It runs the repo-standard lint and
+  nothing else — not the repo's own test suite — so drift fails in the terminal instead of in CI
+  a minute later. It is a **convenience, not a gate**, and is installed uncommitted into
+  `.git/hooks/` precisely because a per-clone, `--no-verify`-skippable hook that a fresh clone
+  never gets can never be enforcement; committing it would imply otherwise. The engine refuses
+  rather than surprising anyone: a foreign pre-push hook is never clobbered, a `core.hooksPath`
+  pointing elsewhere is reported instead of writing where git will never look, and an ungoverned
+  repo is turned away. There is deliberately **no** push-time prompt to adopt the standard:
+  adoption is a reviewed change that deserves its own session, not an interruption of unrelated
+  work.
 - `payload/templates/` — standards-grounded fill-in artifacts: standard-readme README, Keep a
   Changelog CHANGELOG, numbered CONVENTIONS (with the meta-docs-standard section the
   reflexivity check requires), CONTRIBUTING, Contributor Covenant 3.0 CODE_OF_CONDUCT,
   SECURITY, and Apache-2.0 / MIT license texts.
 
-**The proof that it holds** (9 standing tests, zero npm dependencies)
+**The proof that it holds** (10 standing tests, zero npm dependencies)
 - Mutation coverage of every lint rule: a known-clean fixture passes, then one targeted
   violation per rule must redden with the right check named — including the exemptions
   (quoted/fenced/properNouns) staying green and the exit-class split staying 2 vs 1.

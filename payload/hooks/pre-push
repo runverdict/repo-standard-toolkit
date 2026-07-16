@@ -1,0 +1,39 @@
+#!/bin/sh
+# repo-standard pre-push — fast local feedback, NOT the gate.
+#
+# Installed by repo-standard-toolkit into .git/hooks/pre-push, deliberately UNCOMMITTED: a git
+# hook is per-clone, skippable with `git push --no-verify`, and absent for a contributor on a
+# fork — so it can never be enforcement. The gate is the committed lint run by CI on every push
+# (.github/workflows). This only saves you the round trip of finding out from CI.
+#
+# It runs ONE thing: the repo-standard hygiene lint this toolkit installed. Not your test suite
+# — your other tests are yours, and a hook that runs them would be slow and presumptuous.
+#
+# Remove it any time:  rm .git/hooks/pre-push
+# Skip it once:        git push --no-verify
+
+LINT="acceptance/test-repo-standard.mjs"
+
+# Not a governed repo (the lint was removed, or this hook outlived it) — nothing to check.
+[ -f "$LINT" ] || exit 0
+
+# A convenience fails OPEN, but never silently: CI still gates, so say so and let the push go.
+if ! command -v node > /dev/null 2>&1; then
+  echo "repo-standard: node not found — skipping the local hygiene check (CI still gates this push)."
+  exit 0
+fi
+
+if node "$LINT"; then
+  exit 0
+fi
+
+status=$?
+echo ""
+if [ "$status" -eq 2 ]; then
+  echo "repo-standard: .repo-standard.json is broken (exit 2) — fix the config, not the docs."
+else
+  echo "repo-standard: the front matter drifted — CI would fail this push for the reason above."
+fi
+echo "  Fix it, or push anyway with:  git push --no-verify"
+echo "  (This local check is a convenience. The gate is the same lint, run by CI.)"
+exit 1

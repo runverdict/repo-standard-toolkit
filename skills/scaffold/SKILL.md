@@ -1,7 +1,7 @@
 ---
 name: scaffold
 description: Bootstrap or reconcile enterprise repo hygiene in the current repo — sense greenfield vs. mid-project, scaffold the missing meta docs (README / CHANGELOG / CONVENTIONS / CONTRIBUTING / CODE_OF_CONDUCT / SECURITY / LICENSE) from standards-grounded templates, bring drifted ones into compliance without clobbering prose, and install the committed dependency-free lint + CI gate so the standard polices itself on every push with or without Claude. Idempotent — safe to re-run on any repo at any maturity. Use on a fresh repo, on a repo whose front matter has drifted, or to adopt the standard mid-project.
-allowed-tools: Read Grep Glob AskUserQuestion Write(README.md) Write(CHANGELOG.md) Write(CONVENTIONS.md) Write(CONTRIBUTING.md) Write(CODE_OF_CONDUCT.md) Write(SECURITY.md) Write(LICENSE) Write(.repo-standard.json) Write(.github/workflows/*) Edit(README.md) Edit(CHANGELOG.md) Edit(CONVENTIONS.md) Edit(CONTRIBUTING.md) Edit(CODE_OF_CONDUCT.md) Edit(SECURITY.md) Edit(.repo-standard.json) Edit(package.json) Bash(ls *) Bash(mkdir -p acceptance*) Bash(mkdir -p .github/workflows*) Bash(cp *payload/*) Bash(git status*) Bash(git log *) Bash(git remote *) Bash(node *harness/sense-state.mjs *) Bash(node *harness/fill-template.mjs *) Bash(node acceptance/test-repo-standard.mjs*) Bash(node acceptance/test-*.mjs*) Bash(for t in acceptance/test-*.mjs*)
+allowed-tools: Read Grep Glob AskUserQuestion Write(README.md) Write(CHANGELOG.md) Write(CONVENTIONS.md) Write(CONTRIBUTING.md) Write(CODE_OF_CONDUCT.md) Write(SECURITY.md) Write(LICENSE) Write(.repo-standard.json) Write(.github/workflows/*) Edit(README.md) Edit(CHANGELOG.md) Edit(CONVENTIONS.md) Edit(CONTRIBUTING.md) Edit(CODE_OF_CONDUCT.md) Edit(SECURITY.md) Edit(.repo-standard.json) Edit(package.json) Bash(ls *) Bash(mkdir -p acceptance*) Bash(mkdir -p .github/workflows*) Bash(cp *payload/*) Bash(git status*) Bash(git log *) Bash(git remote *) Bash(node *harness/sense-state.mjs *) Bash(node *harness/fill-template.mjs *) Bash(node *harness/install-hook.mjs *) Bash(node acceptance/test-repo-standard.mjs*) Bash(node acceptance/test-*.mjs*) Bash(for t in acceptance/test-*.mjs*)
 ---
 
 # Scaffold
@@ -119,6 +119,21 @@ and no AI hits the same gate.
    when asked, use a conventional commit
    (`chore(repo-standard): scaffold hygiene standard + committed enforcement`).
 
+9. **Offer the local pre-push check — do not assume it.** Once the suite is green, ask
+   (AskUserQuestion) whether the operator wants the optional pre-push hygiene check, and install
+   it only on a yes:
+   `node ${CLAUDE_PLUGIN_ROOT}/harness/install-hook.mjs --target .`
+   Describe it honestly when you ask: it runs the repo-standard lint (nothing else — not their
+   test suite) before each push, so drift fails in their terminal in a moment instead of in CI a
+   minute later. It is a **convenience, not a gate** — per-clone, uncommitted, skippable with
+   `git push --no-verify`, and absent for anyone who clones fresh. Never claim it enforces
+   anything; the committed lint in CI is what enforces. A git hook surprises people, so silence
+   is a NO — if the operator is absent or ambiguous, skip it and say so in the recap. The engine
+   refuses rather than surprising anyone (an existing pre-push hook, a `core.hooksPath` pointing
+   elsewhere, an ungoverned repo); a refusal is information for the operator, never something to
+   route around with `--force`. Skip this step entirely on a repo that is not governed by the
+   end of the run.
+
 ## Automated vs. manual recap
 
 End every run with two lists. **Automated:** every file created / modified / upgraded, one line
@@ -126,7 +141,9 @@ each, with the reconcile before→after quotes and which template or engine prod
 **Manual:** what only the operator can finish — reviewing the generated prose, supplying any
 contact/tagline left open, committing and pushing, and (once pushed) confirming the CI gate ran.
 State plainly that the standard is now enforced by the committed lint in CI, not by this plugin
-— removing the plugin changes nothing about enforcement.
+— removing the plugin changes nothing about enforcement. If the pre-push hook was installed, say
+where it lives, that it is local-only and uncommitted (a teammate who wants it re-runs this
+skill), and how to remove it.
 
 ## What feeds the next skill
 
