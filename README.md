@@ -101,8 +101,8 @@ sections, extra banned words), never the standard itself.
 ## Install
 
 ```bash
-claude plugin marketplace add runverdict/repo-standard-toolkit
-claude plugin install repo-standard-toolkit@runverdict-repo-standard
+claude plugin marketplace add runverdict/claude-plugins
+claude plugin install repo-standard-toolkit@runverdict-plugins
 ```
 
 Requirements: the target repo needs nothing beyond **Node 18+ in CI** for the installed gate.

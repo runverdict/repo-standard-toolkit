@@ -15,7 +15,9 @@
  *   CV3 THE LOCK: once a dated release exists, the newest concrete CHANGELOG version ===
  *       `.claude-plugin/plugin.json` version. Pre-first-release (no dated version yet) the
  *       lockstep is dormant.
- *   CV4 the plugin.json name is listed in `.claude-plugin/marketplace.json` plugins[].
+ *   CV4 plugin.json declares the identity the catalog installs it by (name + repository). The
+ *       marketplace catalog itself lives in runverdict/claude-plugins — one namespace, one
+ *       authority — so there is no local marketplace.json to cross-check (see W7).
  *
  * NOTE: CHANGELOG.md may not exist yet — CV1-CV3 then fail as named checks (never a crash),
  * because the file will land before this suite gates the repo.
@@ -78,11 +80,13 @@ check('CV3 LOCK: once a release is dated, the newest CHANGELOG version === plugi
     `the newest CHANGELOG version (${versions[0]}) must match .claude-plugin/plugin.json (${pluginVersion}) — bump both in lockstep when cutting a release`)
 })
 
-check('CV4 the plugin.json name is listed in marketplace.json plugins[]', () => {
+check('CV4 plugin.json declares the identity the catalog installs it by', () => {
+  // The marketplace catalog lives in runverdict/claude-plugins (one namespace, one authority —
+  // see W7 in test-skill-wiring), so there is no local marketplace.json to cross-check against.
+  // What this repo owns is its own identity: the name the catalog lists and users install by.
   const pj = JSON.parse(read('.claude-plugin/plugin.json'))
-  const mk = JSON.parse(read('.claude-plugin/marketplace.json'))
-  const entry = (mk.plugins || []).find((p) => p.name === pj.name)
-  assert.ok(entry, `marketplace.json lists a plugin named "${pj.name}"`)
+  assert.equal(pj.name, 'repo-standard-toolkit', 'plugin.json name is the install identity the catalog references')
+  assert.match(pj.repository, /github\.com\/runverdict\/repo-standard-toolkit/, 'plugin.json repository must be the repo the catalog sources from')
 })
 
 console.log(`\n${pass} passed, ${fail} failed`)
