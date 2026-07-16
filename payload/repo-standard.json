@@ -16,9 +16,10 @@
 
   "//versionManifest": "Where the released version lives, for the CHANGELOG lockstep. Omit to auto-detect (.claude-plugin/plugin.json, then package.json); a path string for a JSON manifest with .version; { \"file\": ..., \"match\": \"regex with one capture\" } for non-JSON; false if the repo has no version manifest.",
 
-  "//readme": "Extra required README sections beyond the hardcoded canon, as case-insensitive regexes over H2 headings. The scaffolder ships the full standard-readme + honesty shape.",
+  "//readme": "requireSections: extra required README sections beyond the hardcoded canon, as case-insensitive regexes over H2 headings. docsOnly: standard-readme's own documentation-repository exception — set true ONLY for a repo with no functional code; it waives Install + Usage and nothing else (default false).",
   "readme": {
-    "requireSections": ["usage", "caveat|limitation"]
+    "requireSections": ["usage", "caveat|limitation"],
+    "docsOnly": false
   },
 
   "//conventions": "The `## N.` contiguity rule is hardcoded; minSections is an anti-gutting floor.",
@@ -26,13 +27,14 @@
     "minSections": 3
   },
 
-  "//voice": "extraBanned appends to the hardcoded marketing-ban list (each extra term must also be documented in CONVENTIONS — the reflexivity check enforces that). alsoScan widens the sweep.",
+  "//voice": "extraBanned appends to the hardcoded marketing-ban list (each extra term must also be documented in CONVENTIONS — the reflexivity check enforces that). properNouns: exact, CASE-SENSITIVE names exempt from the ban, for a product genuinely called e.g. 'Seamless Deploy' — every active exemption prints on every run, so it can never hide. alsoScan widens the sweep to more files.",
   "voice": {
     "extraBanned": [],
+    "properNouns": [],
     "alsoScan": []
   },
 
-  "//counts": "Machine-checked numeric claims, keyed by a stable id. Each: pattern (regex, group 1 captures the number), and a source of truth — glob (literal dirs + '*' in the basename only) or file+lineRegex — or neither for cross-doc-agreement-only numbers. Optional docs (default: the whole meta-doc set) and minMentions. Declare a count ONLY when the repo actually states it in prose.",
+  "//counts": "Machine-checked numeric claims, keyed by a stable id. Each: pattern (regex, group 1 captures the number), and a source of truth — glob (literal dirs + '*' in the basename only) or file+lineRegex — or neither for cross-doc-agreement-only numbers. Optional: docs (which docs to scan; default the whole meta-doc set), minMentions (the claim must appear at least N times), and under (a regex over heading text — scan only that section, so a historical number in a dated CHANGELOG release block stays history instead of failing forever once the live count moves). Declare a count ONLY when the repo actually states it in prose.",
   "counts": {},
 
   "//stableDocs": "Rarely-changing meta files that must exist and open with an H1. Replacing this list is a visible weakening — think before shrinking it.",

@@ -95,3 +95,6 @@ enforced by its own installed copy of `acceptance/test-repo-standard.mjs` (scope
 - **Stable meta files** — SECURITY, CONTRIBUTING, CODE_OF_CONDUCT (the
   [Contributor Covenant](https://www.contributor-covenant.org/), currently 3.0) exist and open
   with an H1.
+- **No unfinished scaffolds.** No `TODO(scaffold)` marker survives in a governed doc — the lint
+  reddens on any left behind, so a half-written scaffold cannot pass CI while looking done.
+  Naming the marker in backticks (as this line does) is a mention, not an unfinished scaffold.

@@ -118,11 +118,19 @@ try {
     assert.ok(r.out.includes('RS-lockstep'), `lockstep must be reported (skip or dormant)\n${r.out}`)
   })
 
-  check('TG5 both license templates fill (Apache-2.0 has no placeholders; MIT takes year + holder)', () => {
+  check('TG5 both license templates carry the copyright line and fill it with the real year + holder', () => {
     fill('LICENSE-MIT.txt', join(tmp, 'LICENSE-MIT-sample'))
     const mit = readFileSync(join(tmp, 'LICENSE-MIT-sample'), 'utf8')
     assert.ok(mit.includes('Copyright (c) 2026 Acme Maintainers'), 'MIT fill carries year + holder')
-    assert.ok(!readFileSync(join(tmp, 'LICENSE'), 'utf8').includes('{{'), 'Apache LICENSE is placeholder-free')
+    // the Apache template takes the same two placeholders — a hardcoded copyright line here
+    // would stamp someone else's attribution into every repo this ever scaffolds.
+    const apache = readFileSync(join(tmp, 'LICENSE'), 'utf8')
+    assert.ok(apache.includes('Copyright 2026 Acme Maintainers'), 'Apache fill carries year + holder')
+    assert.ok(!apache.includes('{{'), 'Apache LICENSE is fully filled')
+    for (const t of ['LICENSE-Apache-2.0.txt', 'LICENSE-MIT.txt']) {
+      const src = readFileSync(join(TPL, t), 'utf8')
+      assert.ok(/\{\{YEAR\}\}/.test(src) && /\{\{LICENSE_HOLDER\}\}/.test(src), `${t} must take YEAR + LICENSE_HOLDER rather than hardcoding an attribution`)
+    }
   })
 } finally {
   rmSync(tmp, { recursive: true, force: true })

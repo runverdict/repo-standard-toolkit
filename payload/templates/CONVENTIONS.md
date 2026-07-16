@@ -55,6 +55,8 @@ published specs, not invented here:
 - **Voice (§3) extends here.** No marketing superlatives and no "simply" in any meta doc.
 - **Stable meta files** — SECURITY, CONTRIBUTING, and CODE_OF_CONDUCT (the
   [Contributor Covenant](https://www.contributor-covenant.org/)) exist and open with an H1.
+- **No unfinished scaffolds.** No `TODO(scaffold)` marker survives in a governed doc — the lint
+  reddens on any left behind, so a half-written scaffold cannot pass CI while looking done.
 
 The lint is installed and updated by
 [`repo-standard-toolkit`](https://github.com/runverdict/repo-standard-toolkit); this repo owns
