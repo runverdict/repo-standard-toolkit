@@ -15,6 +15,16 @@
  *   LB-C-*        config mutations → exit 2, doc checks not run, offending key named.
  *   LB-S-*        skips and reasoned disables are printed, loud, and honored.
  *
+ * Two rules for adding a case here, both learned from a mutation audit that found six rules
+ * surviving deletion with this whole suite green:
+ *   1. Assert on the MESSAGE, never a substring of the check's NAME. The `✗` line prints the
+ *      check name, so a needle like 'bold tagline' (which is IN the RS-readme name) passes no
+ *      matter which assertion fired — a guard that cannot fail.
+ *   2. Several assertions share one check name. Plant an input that trips ONLY the one under
+ *      test, or an earlier assertion fires first and the rule you meant to prove is untouched.
+ * Verify a new case the same way: delete the rule from BOTH lint copies (payload-sync would
+ * otherwise redden on the copy instead of the behavior) and confirm this suite goes red.
+ *
  * The fixture exercises every configurable surface: manifest reconcile, requireSections,
  * minSections, extraBanned + properNouns, glob / file+lineRegex / agreement-only counts,
  * minMentions, `under` scoping, lockstep via auto-detected package.json.
@@ -173,9 +183,16 @@ expect('LB-M-lockstep a manifest version that disagrees with the newest dated CH
 expect('LB-M-readme-h1 a second H1 reddens RS-readme',
   (f) => { f['README.md'] += '\n# Another title\n' }, 1,
   '✗ RS-readme', 'exactly one H1')
-expect('LB-M-readme-tagline a blockquote where the bold tagline belongs reddens RS-readme',
+// NB: RS-readme runs many assertions under ONE check name, and that name literally contains
+// "bold tagline" — so a needle like 'bold tagline' is satisfied by the ✗ line itself no matter
+// which assertion fired, and cannot tell them apart. Needles here must be substrings of the
+// MESSAGE only, never of the check name. These two cases isolate one assertion each.
+expect('LB-M-readme-blockquote a blockquote where the short description belongs reddens RS-readme',
   (f) => { f['README.md'] = f['README.md'].replace('**A test fixture repo for the repo-standard lint.**', '> a quote instead of a tagline') }, 1,
-  '✗ RS-readme', 'bold tagline')
+  '✗ RS-readme', 'must not be a blockquote')
+expect('LB-M-readme-tagline a PLAIN (non-bold) short description reddens RS-readme — the house bold rule is real',
+  (f) => { f['README.md'] = f['README.md'].replace('**A test fixture repo for the repo-standard lint.**', 'A test fixture repo for the repo-standard lint.') }, 1,
+  '✗ RS-readme', 'needs a bold tagline')
 expect('LB-M-readme-install a missing Install section reddens RS-readme',
   (f) => { f['README.md'] = f['README.md'].replace('## Install', '## Setup') }, 1,
   '✗ RS-readme', 'Install section')
@@ -215,9 +232,14 @@ expect('LB-M-conventions-gap a numbering gap reddens RS-conventions',
 expect('LB-M-conventions-floor gutting below minSections reddens RS-conventions',
   (f) => { f['CONVENTIONS.md'] = f['CONVENTIONS.md'].split('## 3. Meta docs standard')[0] }, 1,
   '✗ RS-conventions')
-expect('LB-M-manifest a Totals line that no longer sums reddens RS-manifest',
+expect('LB-M-manifest a per-status count that no longer matches its rows reddens RS-manifest',
   (f) => { f['MANIFEST.md'] = f['MANIFEST.md'].replace('**1 UNCHANGED · 2 NEW · 3 total.**', '**2 UNCHANGED · 2 NEW · 4 total.**') }, 1,
   '✗ RS-manifest', 'Totals says 2 UNCHANGED but the table has 1')
+// every per-status count CORRECT and only the grand total wrong — the one input that reaches
+// the sum assertion, which the per-status cases above always trip first and so never exercise.
+expect('LB-M-manifest-total a wrong grand total with correct per-status counts reddens RS-manifest',
+  (f) => { f['MANIFEST.md'] = f['MANIFEST.md'].replace('· 3 total.**', '· 99 total.**') }, 1,
+  '✗ RS-manifest', '!= the row sum')
 expect('LB-M-voice a banned marketing word in prose reddens RS-voice',
   (f) => { f['README.md'] = f['README.md'].replace('Clone it.', 'Clone it for a seamless setup.') }, 1,
   '✗ RS-voice', 'seamless')
@@ -265,6 +287,31 @@ expect('LB-M-voice-contraction apostrophes in prose cannot swallow a banned word
 expect('LB-M-changelog-h4 an ad-hoc H4 subsection under a version reddens RS-changelog',
   (f) => { f['CHANGELOG.md'] = f['CHANGELOG.md'].replace('### Added', '#### Breaking Changes\n\n- x\n\n### Added') }, 1,
   '✗ RS-changelog', 'only ### category subsections')
+// ── the six rules a mutation audit found with NO red-path case: each is deletable with the
+// ── whole suite green until these exist, and each is the ONLY thing catching its own drift.
+expect('LB-M-changelog-title a CHANGELOG titled something else ("# Release Notes") reddens RS-changelog',
+  (f) => { f['CHANGELOG.md'] = f['CHANGELOG.md'].replace('# Changelog', '# Release Notes') }, 1,
+  '✗ RS-changelog', 'must open with a top-level')
+expect('LB-M-changelog-cite a CHANGELOG that never names the Keep a Changelog format reddens RS-changelog',
+  (f) => { f['CHANGELOG.md'] = f['CHANGELOG.md'].replace('Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).', 'Format: some format.') }, 1,
+  '✗ RS-changelog', 'must name the Keep a Changelog format')
+expect('LB-M-conventions-decoy relocating CONVENTIONS while a rotten root CONVENTIONS.md remains reddens RS-conventions',
+  (f) => {
+    editConfig(f, (c) => { c.docs = { conventions: 'docs/CONVENTIONS.md' } })
+    f['docs/CONVENTIONS.md'] = f['CONVENTIONS.md']          // the pristine configured copy
+    f['CONVENTIONS.md'] = '# Conventions\n\n## 99. Rotten\n\nThe file contributors actually open.\n'
+  }, 1,
+  '✗ RS-conventions', 'one conventions doc only')
+expect('LB-M-reflexivity-usage CONVENTIONS dropping a required README section ("Usage") reddens RS-reflexivity',
+  (f) => { f['CONVENTIONS.md'] = f['CONVENTIONS.md'].replace('Install, Usage, Contributing,', 'Install, Contributing,') }, 1,
+  '✗ RS-reflexivity', 'required README section "Usage"')
+expect('LB-M-reflexivity-kac CONVENTIONS dropping the Keep a Changelog citation reddens RS-reflexivity',
+  (f) => { f['CONVENTIONS.md'] = f['CONVENTIONS.md'].replace('CHANGELOG follows Keep a Changelog (keepachangelog.com):', 'CHANGELOG uses:') }, 1,
+  '✗ RS-reflexivity', 'must cite the Keep a Changelog standard')
+expect('LB-M-reflexivity-sr CONVENTIONS dropping the standard-readme citation reddens RS-reflexivity',
+  (f) => { f['CONVENTIONS.md'] = f['CONVENTIONS.md'].replace('README follows standard-readme:', 'README has:') }, 1,
+  '✗ RS-reflexivity', 'must cite the standard-readme standard')
+
 expect('LB-M-changelog-decoy relocating the changelog while a root CHANGELOG.md still exists reddens RS-changelog',
   (f) => {
     editConfig(f, (c) => { c.docs = { changelog: 'docs/CHANGELOG.md' } })

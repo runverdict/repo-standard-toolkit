@@ -274,6 +274,31 @@ try {
     writeFileSync(join(block, '.github', 'workflows', 'ci.yml'), 'name: ci\njobs:\n  t:\n    steps:\n      - run: |\n          for t in acceptance/test-*.mjs; do node "$t" || exit 1; done\n')
     assert.equal(sense(block).enforcement.ci.runsAcceptance, true, 'a block-scalar run body is a gate')
   })
+  check('SS9: defaultBranch is the DEFAULT branch, not the topic branch that happens to be checked out', () => {
+    const d = join(tmp, 'branch-topic')
+    mkdirSync(d)
+    execFileSync('git', ['init', '-b', 'main'], { cwd: d, stdio: 'ignore' })
+    execFileSync('git', ['-c', 'user.email=a@b.c', '-c', 'user.name=a', 'commit', '-q', '--allow-empty', '-m', 'i'], { cwd: d, stdio: 'ignore' })
+    assert.equal(sense(d).derived.defaultBranch, 'main', 'on the default branch itself')
+    execFileSync('git', ['checkout', '-q', '-b', 'feature/spike'], { cwd: d, stdio: 'ignore' })
+    // scaffolding almost always happens on a topic branch — this is the common path, and the
+    // wrong answer here gets baked into the docs as {{DEFAULT_BRANCH}}.
+    assert.equal(sense(d).derived.defaultBranch, 'main', 'a topic branch must not be reported as the default')
+    // a master-based repo must not be told it is "main"
+    const m = join(tmp, 'branch-master')
+    mkdirSync(m)
+    execFileSync('git', ['init', '-b', 'master'], { cwd: m, stdio: 'ignore' })
+    execFileSync('git', ['-c', 'user.email=a@b.c', '-c', 'user.name=a', 'commit', '-q', '--allow-empty', '-m', 'i'], { cwd: m, stdio: 'ignore' })
+    execFileSync('git', ['checkout', '-q', '-b', 'topic'], { cwd: m, stdio: 'ignore' })
+    assert.equal(sense(m).derived.defaultBranch, 'master', 'a master repo keeps master')
+  })
+  check('SS9: a bare MIT grant with no title line still derives MIT (the fallback branch is load-bearing)', () => {
+    const d = join(tmp, 'lic-mit-bare')
+    mkdirSync(d)
+    // the very common MIT LICENSE that omits the "MIT License" title and opens on the copyright
+    writeFileSync(join(d, 'LICENSE'), 'Copyright (c) 2020 Someone\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software...\n')
+    assert.equal(sense(d).derived.licenseId, 'MIT')
+  })
   check('SS9: git signals do not leak from an ancestor repository', () => {
     // tmp itself is not a repo; make one, then sense a plain subdir inside it
     const outer = join(tmp, 'outer-repo')

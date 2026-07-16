@@ -115,7 +115,13 @@ try {
     const r = runLint(tmp)
     assert.ok(r.out.includes('RS-manifest SKIP'), `manifest skip must be printed\n${r.out}`)
     assert.ok(r.out.includes('RS-counts SKIP'), `counts skip must be printed\n${r.out}`)
-    assert.ok(r.out.includes('RS-lockstep'), `lockstep must be reported (skip or dormant)\n${r.out}`)
+    // must be the SKIP line specifically: a bare 'RS-lockstep' needle is satisfied by a '✓'
+    // PASS too, which is exactly the failure this check exists to catch — a dormant check
+    // counted as a pass inflates the green total and hides that it never ran. This is the only
+    // coverage of the no-version-manifest skip path (the lint-behavior fixture ships a
+    // package.json, so lockstep is always ACTIVE there).
+    assert.ok(r.out.includes('RS-lockstep SKIP'), `lockstep must print a SKIP line, not merely appear\n${r.out}`)
+    assert.match(r.out, /\d+ passed, 0 failed, \d+ skipped/, `the summary must count the skips it printed\n${r.out}`)
   })
 
   check('TG5 both license templates carry the copyright line and fill it with the real year + holder', () => {

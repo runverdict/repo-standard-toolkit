@@ -124,9 +124,15 @@ if (cargoText) manifests['Cargo.toml'] = { version: cargoText.match(/^version\s*
 
 const remoteUrl = gitOwnsTarget ? git('remote', 'get-url', 'origin') : null
 // the repo's DEFAULT branch, not whatever is checked out: scaffolding happens on a topic branch
-// far more often than not, and this value gets baked into docs.
+// far more often than not, and this value gets baked into docs. In descending order of
+// authority — origin/HEAD says it outright; an existing local main/master is strong evidence
+// (git itself has no notion of a default without a remote); init.defaultBranch is only a
+// preference for NEW repos, so it ranks below real branches; the current branch is the last
+// resort and is exactly the wrong answer on a topic branch, hence last.
+const branchExists = (b) => git('rev-parse', '--verify', '--quiet', `refs/heads/${b}`) !== null
 const defaultBranch = gitOwnsTarget
   ? (git('symbolic-ref', '--short', 'refs/remotes/origin/HEAD')?.replace(/^origin\//, '')
+    ?? (branchExists('main') ? 'main' : branchExists('master') ? 'master' : null)
     ?? git('config', '--get', 'init.defaultBranch')
     ?? git('symbolic-ref', '--short', 'HEAD'))
   : null
