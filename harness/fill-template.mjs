@@ -28,14 +28,22 @@ const fail = (msg) => { console.error(`fill-template: ${msg}`); process.exit(2) 
 const args = process.argv.slice(2)
 let template = null, out = null, stdout = false, force = false
 const values = {}
+// a value-taking flag must never swallow the NEXT FLAG as its value: `--out --force` is a
+// dropped path (a plausible typo), and writing a file literally named "--force" and exiting 0
+// would break this engine's one promise — fail loud, never silent.
+const take = (flag, i) => {
+  const v = args[i]
+  if (v === undefined || v.startsWith('--')) fail(`${flag} expects a value, got "${v ?? '<end of arguments>'}"`)
+  return v
+}
 for (let i = 0; i < args.length; i++) {
   const a = args[i]
-  if (a === '--template') template = args[++i]
-  else if (a === '--out') out = args[++i]
+  if (a === '--template') template = take('--template', ++i)
+  else if (a === '--out') out = take('--out', ++i)
   else if (a === '--stdout') stdout = true
   else if (a === '--force') force = true
   else if (a === '--set') {
-    const kv = args[++i] || ''
+    const kv = take('--set', ++i)
     const eq = kv.indexOf('=')
     if (eq < 1) fail(`--set expects KEY=VALUE, got "${kv}"`)
     const key = kv.slice(0, eq)
@@ -64,7 +72,13 @@ if (stdout) {
   process.stdout.write(filled)
 } else {
   if (existsSync(out) && !force) fail(`refusing to overwrite existing ${out} (pass --force only after reviewing what is there)`)
-  mkdirSync(dirname(out), { recursive: true })
-  writeFileSync(out, filled)
+  // an I/O failure lands on the documented refusal path (exit 2 + a message), never as a raw
+  // stack trace on exit 1 — a caller branching on the exit code must see the contract hold.
+  try {
+    mkdirSync(dirname(out), { recursive: true })
+    writeFileSync(out, filled)
+  } catch (e) {
+    fail(`cannot write ${out}: ${e.message}`)
+  }
   console.log(`fill-template: wrote ${out} (${needed.size} placeholder${needed.size === 1 ? '' : 's'} filled)`)
 }

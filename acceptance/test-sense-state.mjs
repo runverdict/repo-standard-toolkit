@@ -203,6 +203,90 @@ try {
     writeFileSync(join(odd, 'LICENSE'), 'You may use this for good, not evil.\n')
     assert.equal(sense(odd).derived.licenseId, 'unrecognized')
   })
+
+  // ---- SS9: derivation precision (each was a confirmed code-review finding) ----
+  const lic = (name, text) => {
+    const d = join(tmp, `lic-${name}`)
+    mkdirSync(d, { recursive: true })
+    writeFileSync(join(d, 'LICENSE'), text)
+    return sense(d).derived.licenseId
+  }
+  check('SS9: BSD-2-Clause is not mislabeled BSD-3-Clause (the shared preamble is not distinctive)', () => {
+    const preamble = 'Redistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions are met:\n'
+    assert.equal(lic('bsd2', `BSD 2-Clause License\n\nCopyright (c) 2026 Acme\n\n${preamble}`), 'BSD-2-Clause')
+    assert.equal(lic('bsd3', `BSD 3-Clause License\n\nCopyright (c) 2026 Acme\n\n${preamble}\n3. Neither the name of the copyright holder nor the names of its contributors\n`), 'BSD-3-Clause')
+    // an unlabeled BSD variant must say "unrecognized" rather than guess a clause count
+    assert.equal(lic('bsdbare', `Copyright (c) 2026 Acme\n\n${preamble}`), 'unrecognized')
+  })
+  check('SS9: a tagline with mid-line bold survives whole (not truncated at the first **)', () => {
+    const d = join(tmp, 'tag-inline')
+    mkdirSync(d)
+    writeFileSync(join(d, 'README.md'), '# acme\n\nA **fast** JSON parser for embedded targets.\n')
+    assert.equal(sense(d).derived.tagline, 'A fast JSON parser for embedded targets.')
+  })
+  check('SS9: an H1 whose text also appears earlier in prose does not mis-anchor the tagline', () => {
+    const d = join(tmp, 'tag-inline-h1')
+    mkdirSync(d)
+    writeFileSync(join(d, 'README.md'), 'Preamble mentioning `# acme` inline.\n\n# acme\n\nThe real tagline.\n')
+    assert.equal(sense(d).derived.tagline, 'The real tagline.')
+  })
+  check('SS9: badges between the H1 and the tagline are skipped, not mistaken for it', () => {
+    const d = join(tmp, 'tag-badge')
+    mkdirSync(d)
+    writeFileSync(join(d, 'README.md'), '# acme\n\n[![ci](https://img.shields.io/badge/ci-ok-green)](https://e.com)\n\nThe real tagline.\n')
+    assert.equal(sense(d).derived.tagline, 'The real tagline.')
+  })
+  check('SS9: a broken package.json does not shadow a valid pyproject.toml beside it', () => {
+    const d = join(tmp, 'mf-broken')
+    mkdirSync(d)
+    writeFileSync(join(d, 'package.json'), '{ "name": "x", // nope\n}')
+    writeFileSync(join(d, 'pyproject.toml'), 'name = "acme-parser"\nversion = "1.0.0"\n')
+    assert.equal(sense(d).derived.projectName, 'acme-parser')
+  })
+  check('SS9: hasH1 is false for a doc whose only "# " is a shell comment inside a fence', () => {
+    const d = join(tmp, 'h1-fence')
+    mkdirSync(d)
+    writeFileSync(join(d, 'README.md'), 'acme\n====\n\nInstall:\n\n```bash\n# install it\nnpm i acme\n```\n')
+    assert.equal(sense(d).artifacts['README.md'].hasH1, false)
+  })
+  check('SS9: an invalid .repo-standard.json is not "governed" — the plan says repair', () => {
+    const d = join(tmp, 'bad-config')
+    buildGoverned(d)
+    writeFileSync(join(d, '.repo-standard.json'), '{ "projectName": "acme",, }')
+    const r = sense(d)
+    assert.equal(r.enforcement.config.valid, false)
+    assert.notEqual(r.classification, 'governed')
+    assert.equal(planAction(r, '.repo-standard.json'), 'repair')
+  })
+  check('SS9: a commented-out or echoed gate line does not count as the CI gate', () => {
+    const d = join(tmp, 'gate-comment')
+    mkdirSync(join(d, '.github', 'workflows'), { recursive: true })
+    writeFileSync(join(d, '.github', 'workflows', 'ci.yml'), 'name: ci\njobs:\n  t:\n    steps:\n      # - run: node acceptance/test-repo-standard.mjs\n      - run: echo "we should run node acceptance/test-repo-standard.mjs someday"\n')
+    assert.equal(sense(d).enforcement.ci.runsAcceptance, false)
+  })
+  check('SS9: a real gate IS still detected in both the inline and block-scalar step shapes', () => {
+    const inline = join(tmp, 'gate-inline')
+    mkdirSync(join(inline, '.github', 'workflows'), { recursive: true })
+    writeFileSync(join(inline, '.github', 'workflows', 'ci.yml'), 'name: ci\njobs:\n  t:\n    steps:\n      - run: node acceptance/test-repo-standard.mjs\n')
+    assert.equal(sense(inline).enforcement.ci.runsAcceptance, true, 'inline `- run: node …` is a gate')
+    const block = join(tmp, 'gate-block')
+    mkdirSync(join(block, '.github', 'workflows'), { recursive: true })
+    writeFileSync(join(block, '.github', 'workflows', 'ci.yml'), 'name: ci\njobs:\n  t:\n    steps:\n      - run: |\n          for t in acceptance/test-*.mjs; do node "$t" || exit 1; done\n')
+    assert.equal(sense(block).enforcement.ci.runsAcceptance, true, 'a block-scalar run body is a gate')
+  })
+  check('SS9: git signals do not leak from an ancestor repository', () => {
+    // tmp itself is not a repo; make one, then sense a plain subdir inside it
+    const outer = join(tmp, 'outer-repo')
+    mkdirSync(outer)
+    execFileSync('git', ['init', '-b', 'main'], { cwd: outer, stdio: 'ignore' })
+    execFileSync('git', ['remote', 'add', 'origin', 'git@github.com:acme/outer.git'], { cwd: outer, stdio: 'ignore' })
+    const inner = join(outer, 'newproject')
+    mkdirSync(inner)
+    const r = sense(inner)
+    assert.equal(r.signals.git.isRepo, false, 'a plain dir inside a checkout is not itself a repo')
+    assert.equal(r.signals.git.remoteUrl, null, 'the ancestor remote must not leak in')
+    assert.equal(r.derived.repoSlug, null)
+  })
 } finally {
   rmSync(tmp, { recursive: true, force: true })
 }
