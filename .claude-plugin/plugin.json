@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "repo-standard-toolkit",
+  "displayName": "Repo Standard Toolkit",
+  "description": "Bootstraps and enforces enterprise repo hygiene in any codebase: scaffolds README / CHANGELOG / CONVENTIONS / CONTRIBUTING / CODE_OF_CONDUCT / SECURITY / LICENSE from published standards (Keep a Changelog, standard-readme, Contributor Covenant, SemVer), then installs a committed, dependency-free lint plus the CI gate that runs it, so the standard polices itself on every push — with or without Claude.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Aiden Seeley",
+    "url": "https://github.com/runverdict"
+  },
+  "repository": "https://github.com/runverdict/repo-standard-toolkit",
+  "homepage": "https://github.com/runverdict/repo-standard-toolkit#readme",
+  "license": "Apache-2.0",
+  "skills": "./skills/",
+  "keywords": [
+    "repo-hygiene",
+    "scaffolding",
+    "keep-a-changelog",
+    "standard-readme",
+    "contributor-covenant",
+    "conventional-commits",
+    "ci-gate",
+    "lint"
+  ]
+}
