@@ -16,6 +16,11 @@
  *   W5  every ${CLAUDE_PLUGIN_ROOT}/payload/... path a skill references exists on disk.
  *   W6  plugin.json is coherent: parses, points skills at ./skills/, semver version,
  *       and its license id matches the LICENSE file actually shipped.
+ *   W7  marketplace.json is coherent AND its name does not squat a marketplace another repo
+ *       already publishes — the name is a GLOBAL key in the user's settings, so a collision
+ *       silently replaces the other repo's entry and breaks every plugin installed from it
+ *       (this happened: `runverdict-plugins` collided with sf-security-review-toolkit's
+ *       marketplace and knocked it to "failed to load"). The name must be repo-specific.
  *
  * Dependency-free: `node acceptance/test-skill-wiring.mjs`.
  */
@@ -98,6 +103,20 @@ check('W6 plugin.json is coherent (skills dir, semver version, license matches t
   assert.equal(pj.license, 'Apache-2.0', 'plugin.json license id')
   assert.match(read('LICENSE'), /Apache License/, 'the shipped LICENSE file must be the Apache License text plugin.json claims')
   assert.ok(pj.description.length > 80, 'plugin.json description should say what the plugin does, concretely')
+})
+
+check('W7 marketplace.json is coherent and its name is repo-specific (a global key — collisions break other repos)', () => {
+  const pj = JSON.parse(read('.claude-plugin/plugin.json'))
+  const mk = JSON.parse(read('.claude-plugin/marketplace.json'))
+  assert.ok((mk.plugins || []).some((p) => p.name === pj.name), `marketplace.json must list a plugin named "${pj.name}"`)
+  for (const p of mk.plugins || []) {
+    assert.ok(existsSync(join(ROOT, p.source || '')), `marketplace.json plugin "${p.name}" has source "${p.source}" which does not exist`)
+  }
+  // The marketplace name lands in the user's settings under `extraKnownMarketplaces` as a bare
+  // key. Two repos claiming one name is not a merge — the last `marketplace add` wins and the
+  // loser's installed plugins stop resolving. Anchor the name to THIS repo.
+  assert.ok(mk.name.includes('repo-standard'),
+    `marketplace name "${mk.name}" is not anchored to this repo — a generic org-wide name (e.g. "runverdict-plugins") collides with any sibling repo publishing the same name and silently breaks its installs. Use a repo-specific name.`)
 })
 
 console.log(`\n${pass} passed, ${fail} failed`)
