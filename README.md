@@ -1,25 +1,25 @@
 # repo-standard-toolkit
 
 **Bootstrap and enforce enterprise repo hygiene into any codebase — one command.** A Claude
-Code plugin that scaffolds immaculate project scaffolding (README, CHANGELOG, CONVENTIONS,
-CONTRIBUTING, CODE_OF_CONDUCT, the CI gate) from published standards, then installs a committed
-linter so the standard polices itself on every push — with or without Claude.
+Code plugin that scaffolds immaculate project front matter (README, CHANGELOG, CONVENTIONS,
+CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, LICENSE, the CI gate) from published standards, then
+installs a committed linter so the standard polices itself on every push — with or without
+Claude.
 
-> **Status: seed / vision.** This repo currently holds only the concept. Nothing is built yet.
-> It was planted the day its pattern proved out inside
-> [`ai-readiness-review-toolkit`](https://github.com/runverdict/ai-readiness-review-toolkit) —
-> see [Origin](#origin) for the working reference implementation to lift from. The name is a
-> placeholder; rename freely.
+> **Status: built, pre-first-release.** The plugin version is `0.1.0`; the first tag is cut
+> after field runs against real repos. Everything below describes what exists and is
+> test-guarded in this tree — 9 standing tests, zero npm dependencies, and the repo governs
+> itself with the exact lint it installs elsewhere.
 
 ## Table of Contents
 
 - [Background](#background)
-- [The vision](#the-vision)
 - [How it works](#how-it-works)
+- [What gets installed](#what-gets-installed)
 - [The standards it embodies](#the-standards-it-embodies)
 - [Install](#install)
 - [Usage](#usage)
-- [Kickoff prompt](#kickoff-prompt)
+- [The config](#the-config)
 - [Origin](#origin)
 - [Caveats](#caveats)
 - [Contributing](#contributing)
@@ -29,9 +29,9 @@ linter so the standard polices itself on every push — with or without Claude.
 
 Every serious repo re-invents the same front matter — a README that drifts stale, a CHANGELOG
 that decays into ad-hoc sections, counts that are hand-synced across files until someone forgets
-one, a COPY-MANIFEST whose totals stop summing. The fixes are all **known, published standards**
-(Keep a Changelog, standard-readme, Contributor Covenant, SemVer, Conventional Commits). What's
-missing is a tool that (a) installs them correctly from the first commit and (b) makes them
+one, a manifest whose totals stop summing. The fixes are all **known, published standards**
+(Keep a Changelog, standard-readme, Contributor Covenant, SemVer, Conventional Commits). What
+was missing is a tool that (a) installs them correctly from the first commit and (b) makes them
 **self-enforcing** so they can never rot.
 
 The load-bearing principle, learned the hard way:
@@ -39,33 +39,11 @@ The load-bearing principle, learned the hard way:
 > **Enforcement lives with the code it gates. Generation lives in the agent. Never make
 > enforcement depend on the agent.**
 
-A linter that only fires inside one editor or one AI tool is not a gate — a contributor on a fork
-with vim drifts it freely and CI stays green. So the enforcement is a **committed lint run in
-CI**, tool-agnostic. The agent's job is the *other* half: authoring and installing that
-enforcement, which is judgment-heavy, cross-repo, and one-time-ish — exactly what a plugin is
-good at.
-
-## The vision
-
-`repo-standard-toolkit` is the **scaffolder**, not the enforcer. Invoked on any repo, it:
-
-1. **Senses state.** Greenfield (nothing exists yet) vs. mid-project (files exist and must be
-   brought into compliance without clobbering real content) — by detecting which of the standard
-   artifacts + the lint + the CI workflow are already present.
-2. **Scaffolds what's missing** from immaculate, standards-grounded templates: a standard-readme
-   skeleton, an empty Keep a Changelog, a numbered CONVENTIONS, a Contributor Covenant
-   CODE_OF_CONDUCT, a CONTRIBUTING, a SECURITY policy, a LICENSE, and a `.github/workflows` gate.
-3. **Brings existing files into compliance** — reconciles a drifted CHANGELOG into canonical
-   categories, adds a missing Contributing section, fixes stale counts — surfacing every change
-   for review, never silently rewriting prose.
-4. **Installs its own enforcement** — the key move: it drops in a **committed linter + the CI
-   workflow that runs it**, so from push #1 the standard is self-policing and the plugin is no
-   longer in the loop.
-5. **Is idempotent.** Safe to re-run on any repo at any maturity; it reconciles, never duplicates
-   or clobbers.
-
-The result: a one-command way to make *every* repo you build start — and stay — immaculate, to
-the same standard, without the plugin being a runtime dependency of any of them.
+A linter that only fires inside one editor or one AI tool is not a gate — a contributor on a
+fork with vim drifts it freely and CI stays green. So the enforcement is a **committed lint run
+in CI**, tool-agnostic, dependency-free. The agent's job is the *other* half: authoring and
+installing that enforcement, which is judgment-heavy, cross-repo, and one-time-ish — exactly
+what a plugin is good at.
 
 ## How it works
 
@@ -73,18 +51,34 @@ Two layers, cleanly separated:
 
 | Layer | Artifact | Runs | Depends on Claude? |
 |---|---|---|---|
-| **Scaffold / author** | this plugin (a Claude Code skill) | on demand, once per repo | yes — it's the agent |
-| **Enforce** | a committed lint + `.github/workflows/*.yml` | every push / PR, in CI | **no** — tool-agnostic |
+| **Scaffold / author** | the `scaffold` skill + `harness/` engines | on demand, per repo | yes — it's the agent |
+| **Enforce** | `acceptance/test-repo-standard.mjs` + `.repo-standard.json` + `.github/workflows/*.yml`, committed into the target | every push / PR, in CI | **no** — `node` alone |
 
-The plugin *generates* what CI *enforces*, then steps out. The enforcement it installs is a
-dependency-free standing test (Node built-ins only, no `npm install`) that fails the build on
-drift: canonical CHANGELOG categories, README structure with License last, contiguous CONVENTIONS
-numbering, any manifest totals reconciled against their own rows, a marketing-voice ban, and
-machine-checked counts that must match the real repo.
+The skill senses the repo (`greenfield` / `partial` / `governed` — detected, never assumed),
+confirms a plan, scaffolds what is missing from templates, reconciles what drifted with minimal
+quoted edits, installs the lint + config + CI gate verbatim, and iterates the suite to green.
+Then it steps out: the standard is now policed by the committed lint, and re-invoking the skill
+later is the reconcile/upgrade path, safe at any maturity — it senses, never duplicates, never
+force-overwrites.
 
-A generic core (the standards below, which apply to any repo) plus a thin per-repo extension (the
-counts and artifacts unique to that project). The plugin installs the generic core; each repo
-declares its own specifics.
+## What gets installed
+
+Into the target repo, all committed, all dependency-free:
+
+- `acceptance/test-repo-standard.mjs` — the standing lint. Checks: Keep a Changelog categories
+  + shape + semver ordering, CHANGELOG ⟺ version-manifest lockstep, standard-readme structure
+  with License last, contiguous numbered CONVENTIONS sections, manifest Totals reconciliation,
+  a marketing-voice ban, machine-checked counts against the real tree, lint ⟺ spec
+  reflexivity, stable meta files, and no surviving scaffold TODOs. Exit 1 means the docs
+  drifted; exit 2 means the config is broken; every skip is a printed, named line.
+- `.repo-standard.json` — the repo's declared scope (see [The config](#the-config)).
+- `.github/workflows/test.yml` — the gate: a read-only token running every
+  `acceptance/test-*.mjs` on push and PR. (Named `repo-standard.yml` instead when the repo
+  already has workflows; installed as the lint-only scoped variant when pre-existing acceptance
+  tests are red, so the gate is never born red on someone else's tests.)
+- The meta docs themselves, where missing — README, CHANGELOG, CONVENTIONS, CONTRIBUTING,
+  CODE_OF_CONDUCT, SECURITY, LICENSE — filled from `payload/templates/`, with every
+  `TODO(scaffold)` marker resolved against the real repo before the gate lets them pass.
 
 ## The standards it embodies
 
@@ -92,81 +86,121 @@ Grounded in the published specs, not invented here:
 
 - **CHANGELOG** → [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) — the six
   canonical categories (Added / Changed / Deprecated / Removed / Fixed / Security), an
-  `[Unreleased]` section, reverse-chronological versions.
-- **README** → [standard-readme](https://github.com/RichardLitt/standard-readme) — one H1, a short
-  bold tagline, Install + Usage + Contributing, License last.
-- **CODE_OF_CONDUCT** → [Contributor Covenant](https://www.contributor-covenant.org/).
-- **Versioning** → [SemVer](https://semver.org/), with the CHANGELOG version locked to the
-  package/plugin manifest.
-- **Commits** → [Conventional Commits](https://www.conventionalcommits.org/).
-- **Enforcement pattern** → a committed CI linter, the same way ESLint / markdownlint / commitlint
-  live in the repo, never hidden in an editor plugin.
+  `[Unreleased]` section, reverse-chronological semver versions locked to the version manifest.
+- **README** → [standard-readme](https://github.com/RichardLitt/standard-readme) — one H1, a
+  short bold tagline, Install + Usage + Contributing, License last.
+- **CODE_OF_CONDUCT** → [Contributor Covenant](https://www.contributor-covenant.org/) 3.0.
+- **Versioning** → [SemVer](https://semver.org/). **Commits** →
+  [Conventional Commits](https://www.conventionalcommits.org/).
+- **Enforcement pattern** → a committed CI linter, the same way ESLint / markdownlint /
+  commitlint live in a repo, never hidden in an editor plugin.
+
+The canon is **hardcoded in the lint** — config tunes scope (which docs, which counts, extra
+sections, extra banned words), never the standard itself.
 
 ## Install
-
-Not built yet. When it is, the intended shape:
 
 ```bash
 claude plugin marketplace add runverdict/repo-standard-toolkit
 claude plugin install repo-standard-toolkit@runverdict-plugins
 ```
 
+Requirements: the target repo needs nothing beyond **Node 18+ in CI** for the installed gate.
+There is nothing to `npm install` — the lint, the engines, and the standing tests use Node
+built-ins only.
+
 ## Usage
 
-Not built yet. The intended UX — one command from any repo root:
+From any repo root, one command at any maturity:
 
 ```
 /repo-standard-toolkit:scaffold
 ```
 
-It senses whether the repo is greenfield or mid-project, scaffolds or reconciles accordingly,
-installs the committed lint + CI gate, and hands back a review of everything it created or changed.
+- **Greenfield:** scaffolds the full front matter + enforcement, asks only for what it cannot
+  derive (license choice, contact addresses, a tagline), and refuses to invent what it cannot
+  verify — honest thin sections beat padded false ones.
+- **Mid-project:** reconciles drifted files into compliance with the smallest possible edits,
+  quoting every change (before → after) in the recap. Prose is preserved; an ad-hoc CHANGELOG
+  section is re-homed, never deleted. If pre-existing acceptance tests are red, the gate is
+  scoped so it is never born red on someone else's tests.
+- **Re-run / upgrade:** sensing is the idempotency mechanism — a governed repo reconciles, and
+  a newer payload lint replaces the installed copy wholesale (repo specifics live in the
+  config, so upgrades never clobber them).
 
-## Kickoff prompt
+Every run ends with an automated-vs-manual recap: every file created or changed with why, and
+what only the operator can finish. The gate this repo runs on itself is the same loop the
+installed workflow runs everywhere:
 
-Paste this into a fresh Claude Code session in this repo when you're ready to build it:
+```bash
+for t in acceptance/test-*.mjs; do node "$t" || exit 1; done
+```
 
-> Build `repo-standard-toolkit`: a Claude Code plugin that bootstraps and enforces enterprise repo
-> hygiene into any codebase. The **reference implementation to lift from** is the project-meta
-> governance already shipped in `runverdict/ai-readiness-review-toolkit` — read its
-> `acceptance/test-project-meta-hygiene.mjs` (the enforcement lint), `CONVENTIONS.md` §11 (the
-> written standard), `.github/workflows/test.yml` (the CI gate), and `docs/README.md` (the docs
-> governance system + templates). Generalize that repo-specific lint into a **configurable generic
-> core** (Keep a Changelog categories, standard-readme structure + License-last, contiguous
-> CONVENTIONS numbering, manifest-totals reconcile, marketing-voice ban, machine-checked counts)
-> plus a thin per-repo extension for project-specific counts. Then build the **scaffolder skill**:
-> sense greenfield vs. mid-project; scaffold missing artifacts from standards-grounded templates
-> (README/CHANGELOG/CONVENTIONS/CONTRIBUTING/CODE_OF_CONDUCT[Contributor Covenant]/SECURITY/LICENSE
-> + the CI workflow); reconcile existing drifted files without clobbering prose; **install the
-> committed lint + CI so the standard self-polices from push #1**; idempotent, review-surfacing,
-> never silent. Hold to the same bar as the parent toolkit: zero runtime npm deps (Node built-ins),
-> every determinizable property locked by a standing `acceptance/test-*.mjs`, adversarially verify
-> the generated output, identity-clean conventional commits. Core principle to preserve throughout:
-> **enforcement lives with the code it gates (CI), generation lives in the agent (this plugin);
-> never make enforcement depend on the agent.**
+## The config
+
+`.repo-standard.json`, operator-owned, reconciled (never regenerated) on re-runs. A missing
+file still runs the full hardcoded canon, with default scope (no counts, no extra sections);
+the scaffolder ships a stricter starting config. Keys starting with `//` are comments. Unknown
+keys are hard errors — nothing is silently ignored. The interesting surface:
+
+```json
+{
+  "version": 1,
+  "manifest": { "file": "COPY-MANIFEST.md", "statuses": ["UNCHANGED", "MODIFIED", "NEW"] },
+  "readme": { "requireSections": ["usage", "caveat|limitation"] },
+  "conventions": { "minSections": 7 },
+  "voice": { "extraBanned": ["frictionless"], "properNouns": ["Seamless Deploy"] },
+  "counts": {
+    "standing-tests": {
+      "pattern": "(\\d[\\d,]*)\\s+standing tests",
+      "glob": "acceptance/test-*.mjs",
+      "minMentions": 2
+    }
+  },
+  "checks": { "lockstep": { "enabled": false, "why": "printed loudly on every run" } }
+}
+```
+
+Counts are the anti-drift core: a numeric claim in prose is bound to a derivable fact (a file
+glob, a line-regex count) and to every other doc stating it — a forgotten update reddens the
+build instead of shipping a lie. `under` scopes a count to a region (e.g. `[Unreleased]`) so
+historical numbers in dated CHANGELOG blocks stay historical.
 
 ## Origin
 
-Born from [`ai-readiness-review-toolkit`](https://github.com/runverdict/ai-readiness-review-toolkit),
+Born from
+[`ai-readiness-review-toolkit`](https://github.com/runverdict/ai-readiness-review-toolkit),
 where the project-meta governance system was first built and proven: a committed lint
-(`test-project-meta-hygiene.mjs`) that fails CI on any drift in README / CHANGELOG / CONVENTIONS /
-COPY-MANIFEST, documented as CONVENTIONS §11, grounded in Keep a Changelog + standard-readme. This
-repo is the seed of extracting that pattern into a reusable plugin so every toolkit starts
-immaculate and stays that way.
+(`test-project-meta-hygiene.mjs`) that fails CI on any drift in README / CHANGELOG /
+CONVENTIONS / COPY-MANIFEST, documented as its CONVENTIONS §11, grounded in Keep a Changelog +
+standard-readme. This plugin is that pattern, generalized. During development the generic core
+was run against the parent's real meta docs and reproduced the proven lint's verdict on the same
+tree — including catching the same live count drift the parent's own gate catches. (That run is
+a development-time result, not a standing test in this tree; what IS standing here is the
+mutation coverage in `acceptance/test-lint-behavior.mjs`.)
 
 ## Caveats
 
-A seed, not a product — nothing here runs yet. The scope is repo **hygiene / front matter**
-(docs, changelog, meta files, the CI gate), not code linting or security review (that is the
-parent toolkit's job). When built, the enforcement it installs must stay tool-agnostic and
-dependency-free, or it fails its own thesis.
+- **Scope is repo hygiene / front matter** — docs, changelog, meta files, the CI gate. Not code
+  linting, not tests, not security review (that is the parent toolkit's job).
+- **Markdown + GFM assumptions.** The lint reads ATX headings (`#`), fenced code blocks, and
+  pipe tables; exotic markdown layouts may need the config's paths or a reasoned check disable.
+- **Single-root repos.** Monorepo per-package scoping is not built; govern the repo root, or
+  run per package with separate configs at your own judgment.
+- **The count glob is deliberately tiny** — literal directories + `*` in the basename. Deeper
+  truths use `file` + `lineRegex`. That smallness is what keeps the enforcement auditable.
+- **A scaffold is not a certification.** The gate proves structure, consistency, and
+  machine-checkable facts; the prose quality of what an agent writes still needs the operator's
+  review — which is why every run ends in a quoted recap and nothing is committed for you.
 
 ## Contributing
 
-Not open yet — this is a private seed. When it becomes a real project it will ship a
-`CONTRIBUTING.md` and a `CODE_OF_CONDUCT.md` (Contributor Covenant), and — of course — it will
-scaffold and enforce its own standard on itself.
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow and
+[`CONVENTIONS.md`](CONVENTIONS.md) for the binding rules — the enforcement/generation split,
+the payload byte-identity discipline, and the rule that every determinizable property lands in
+a standing test (9 standing tests today; the pass is zero failures, never a fixed count). By
+participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
-To be decided when the project is built (likely Apache-2.0, matching the parent toolkit).
+Apache-2.0 © runverdict. See [`LICENSE`](LICENSE).

@@ -1,0 +1,21 @@
+{
+  "//": "Scope config for this repo's installed acceptance/test-repo-standard.mjs — we live under the exact standard the plugin installs everywhere else.",
+  "version": 1,
+
+  "readme": {
+    "requireSections": ["usage", "caveat|limitation"]
+  },
+
+  "conventions": {
+    "minSections": 7
+  },
+
+  "//counts": "The README/CHANGELOG state the standing-test count; the lint derives the truth from acceptance/ so the claim can never go stale.",
+  "counts": {
+    "standing-tests": {
+      "pattern": "(\\d[\\d,]*)\\s+(?:dependency-free\\s+)?standing tests",
+      "glob": "acceptance/test-*.mjs",
+      "minMentions": 2
+    }
+  }
+}
