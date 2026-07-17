@@ -61,8 +61,9 @@ published specs, not invented here:
   License section must name the same id. What cannot be compared — an unrecognized text, a
   manifest without the field — is a loud named skip, never a silent pass.
 - **No shadowed meta files.** A governed doc exists in exactly one of `.github/`, the repo
-  root, or `docs/` — GitHub serves the highest-precedence copy, so a duplicate is served drift
-  the content checks cannot see.
+  root, or `docs/`. For README and the community health files GitHub serves only the
+  highest-precedence copy, and for every governed doc a second copy is drift the content
+  checks cannot see.
 - **No unfinished scaffolds.** No `TODO(scaffold)` marker and no unfilled double-braced
   template token survives in a governed doc — the lint reddens on either, so a half-written or
   hand-copied scaffold cannot pass CI while looking done.

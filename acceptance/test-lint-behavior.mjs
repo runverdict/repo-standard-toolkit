@@ -344,6 +344,9 @@ expect('LB-M-shadow-readme a docs/ copy of the README reddens RS-shadow (the roo
   '✗ RS-shadow', 'README.md shadows docs/README.md')
 expect('LB-S-shadow-elsewhere a README in an unrelated subdirectory is not a shadow (only the three GitHub-served locations count)',
   (f) => { f['acceptance/README.md'] = '# acceptance\n\nSuite docs.\n' }, 0)
+expect('LB-M-shadow-manifest the config-declared manifest doc is governed vocabulary too — a .github/ duplicate reddens RS-shadow',
+  (f) => { f['.github/MANIFEST.md'] = '# Manifest\n\nStale copy.\n' }, 1,
+  '✗ RS-shadow', '.github/MANIFEST.md shadows MANIFEST.md')
 
 // ── the hardenings from the adversarial pass, each locked so the bypass can never reopen ──
 expect('LB-M-voice-spaced a hyphenated ban written with a space ("world class") still reddens RS-voice',

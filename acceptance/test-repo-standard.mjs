@@ -686,10 +686,12 @@ gate('placeholders', 'RS-placeholders no unfilled {{PLACEHOLDER}} token survives
 // it lives — only the three GitHub-served locations count (a README in some other subdirectory
 // is that directory's business).
 gate('shadow', 'RS-shadow no governed doc is duplicated across the GitHub-served locations (.github/ > root > docs/)', () => {
-  const basenames = new Set([DOC.readme, DOC.changelog, DOC.conventions, ...stableDocs].map((p) => p.split('/').pop()))
+  // EVERY governed doc, not just the health files: the manifest doc and docs.extra are swept
+  // by voice/todos/placeholders/counts, so they are governed vocabulary here too.
+  const basenames = new Set([DOC.readme, DOC.changelog, DOC.conventions, ...stableDocs, ...(manifestCfg ? [manifestCfg.file] : []), ...extraDocs].map((p) => p.split('/').pop()))
   for (const name of basenames) {
     const hits = [`.github/${name}`, name, `docs/${name}`].filter((p) => exists(p))
-    assert.ok(hits.length <= 1, `duplicate meta file: ${hits[0]} shadows ${hits.slice(1).join(' and ')} — GitHub serves ${hits[0]} (precedence .github/ > root > docs/); keep ONE governed copy and delete the rest`)
+    assert.ok(hits.length <= 1, `duplicate meta file: ${hits[0]} shadows ${hits.slice(1).join(' and ')} (precedence .github/ > root > docs/ — what GitHub serves for README and community health files); one governed copy only, delete the rest`)
   }
 })
 

@@ -111,8 +111,9 @@ from the first push: the standard the plugin installs is the standard it lives u
 - GitHub serves README and every community health file with precedence `.github/` > root >
   `docs/`, so a stale copy in a higher-precedence location replaces the governed one on the
   repo page while the content checks stay green. The new `shadow` check reddens when a
-  governed doc's basename exists in more than one of the three served locations, naming which
-  copy GitHub serves. `sense-state` senses the same three locations: a doc living only in
+  governed doc's basename — README, changelog, conventions, stable docs, the manifest doc, and
+  `docs.extra` alike — exists in more than one of the three locations. `sense-state` senses
+  the same three locations: a doc living only in
   `.github/` is audited (never re-scaffolded at root), the sensed path is reported, and a
   cross-location duplicate prints a DUPLICATE warning; the skill reconciles a doc where it
   lives and leaves resolving duplicates to the operator.
