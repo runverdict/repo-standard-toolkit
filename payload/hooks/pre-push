@@ -18,7 +18,8 @@ LINT="acceptance/test-repo-standard.mjs"
 # Not a governed repo (the lint was removed, or this hook outlived it) — nothing to check.
 [ -f "$LINT" ] || exit 0
 
-# A convenience fails OPEN, but never silently: CI still gates, so say so and let the push go.
+# A convenience fails OPEN, but never silently: the same check still runs in CI, so say so and
+# let the push go.
 if ! command -v node > /dev/null 2>&1; then
   echo "repo-standard: node not found — skipping the local hygiene check (the CI check still runs on this push)."
   exit 0

@@ -27,7 +27,8 @@ check needs the agent at enforcement time, it is rejected or redesigned.
   `payload/acceptance/test-repo-standard.mjs` (the generic lint, canonical copy),
   `payload/repo-standard.json` (the default scope config), `payload/workflows/repo-standard.yml`
   (the CI gate), `payload/rulesets/repo-standard.json` (the branch ruleset that makes the gate
-  a REQUIRED check — dry-run by default), `payload/templates/` (the fill-in artifacts).
+  a REQUIRED check — shipped disabled; activating it is the operator's flip),
+  `payload/templates/` (the fill-in artifacts).
 - **Dogfood is byte-identical.** This repo's own `acceptance/test-repo-standard.mjs` is an
   installed copy of the payload lint; a standing sync test fails the build if the two differ.
   Edit the payload, then re-copy — never the other way.

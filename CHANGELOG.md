@@ -147,9 +147,14 @@ from the first push: the standard the plugin installs is the standard it lives u
   one less third-party action.
 - `payload/rulesets/repo-standard.json` — a GitHub branch ruleset that makes the `test` check
   REQUIRED on the default branch (plus: no deletions, no force pushes, changes via PR, strict
-  up-to-date checks). It ships in `evaluate` (dry-run) enforcement: flipping to `active` is
-  the operator's deliberate act. A standing test locks the required-check context to the job
-  id the payload workflows actually define.
+  up-to-date checks). It ships `disabled` — fully configured but inert, POSTable on every
+  GitHub plan (the `evaluate` dry-run mode is Enterprise-only, so it cannot be the default) —
+  and flipping it to `active` is the operator's deliberate act. Every required check pins
+  `integration_id` 15368 (the GitHub Actions app), so a hand-posted commit status cannot
+  satisfy the gate. A standing test locks the required contexts and the workflows' job ids to
+  the SAME SET, both directions — a phantom context would wedge every merge once active — and
+  rejects job-level display names, which would change the check context out from under the
+  ruleset.
 - The scaffold skill offers the ruleset (new step 9, silence = no) once the suite is green:
   applied via `gh api` when authenticated (idempotent — an existing `repo-standard` ruleset is
   never duplicated), else the manual Settings path is printed; the recap states the repo's

@@ -23,6 +23,9 @@
  *       knocked its installed plugins to "failed to load". The catalog lives in
  *       runverdict/claude-plugins, which lists every toolkit with a url source; this repo ships
  *       a plugin.json and stays out of the namespace business.
+ *   W8  every `gh …` command a skill documents is covered by a Bash grant in its
+ *       allowed-tools — a documented command with no grant fails at runtime, mid-scaffold,
+ *       in someone else's repo (the same binding W3 gives the harness engines).
  *
  * Dependency-free: `node acceptance/test-skill-wiring.mjs`.
  */
@@ -122,6 +125,23 @@ check('W7 this repo publishes no marketplace of its own (one namespace, one auth
     'README Install must add the catalog repo (runverdict/claude-plugins), not this repo — `marketplace add runverdict/repo-standard-toolkit` has no marketplace to find')
   assert.ok(rm.includes(`plugin install ${JSON.parse(read('.claude-plugin/plugin.json')).name}@runverdict-plugins`),
     'README Install must install this plugin from the runverdict-plugins namespace')
+})
+
+check('W8 every gh command a skill documents is covered by a Bash grant in allowed-tools', () => {
+  let bound = 0
+  for (const d of skillDirs) {
+    const text = read(`skills/${d}/SKILL.md`)
+    const fm = frontmatter(text)
+    const grants = [...(fm.match(/^allowed-tools: (.*)$/m)?.[1] ?? '').matchAll(/Bash\(([^)]*)\)/g)].map((m) => m[1])
+    // backticked `gh …` commands in the body are what the agent will actually run; the grant
+    // patterns here are simple prefix globs (trailing *), which is all this repo uses.
+    for (const [, cmd] of text.matchAll(/`(gh [^`]+)`/g)) {
+      bound++
+      const covered = grants.some((g) => cmd.startsWith(g.endsWith('*') ? g.slice(0, -1) : g))
+      assert.ok(covered, `skills/${d} documents \`${cmd}\` but no Bash grant in allowed-tools covers it — the step fails at runtime, mid-scaffold, in someone else's repo`)
+    }
+  }
+  assert.ok(bound >= 2, `expected the documented gh commands to be found (got ${bound}) — refusing a vacuous pass`)
 })
 
 console.log(`\n${pass} passed, ${fail} failed`)

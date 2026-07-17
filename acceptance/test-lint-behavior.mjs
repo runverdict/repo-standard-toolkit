@@ -475,6 +475,12 @@ expect('LB-C-scaffold-key an unknown scaffold key exits 2 and names it',
 expect('LB-C-scaffold-answer a non-string answer value exits 2',
   (f) => editConfig(f, (c) => { c.scaffold = { answers: { YEAR: 2026 } } }), 2,
   '"scaffold.answers.YEAR" must be a string')
+expect('LB-C-scaffold-answers-shape a non-object answers block (array) exits 2',
+  (f) => editConfig(f, (c) => { c.scaffold = { answers: ['MIT'] } }), 2,
+  '"scaffold.answers" must be an object')
+expect('LB-C-scaffold-answer-key an answers key outside the placeholder alphabet exits 2',
+  (f) => editConfig(f, (c) => { c.scaffold = { answers: { 'license id': 'MIT' } } }), 2,
+  'keys are template placeholder names')
 
 // ──────────────────────────────────────────────────────────── loud skips and disables
 expect('LB-S-manifest-skip no manifest declared → a printed SKIP line, not a silent pass',

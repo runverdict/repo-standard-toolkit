@@ -15,12 +15,16 @@
  *   GP1  both payload workflows trigger on push + pull_request + merge_group.
  *   GP2  every `uses:` in the payload workflows is pinned to a full 40-hex commit SHA with a
  *        human-readable `# v<tag>` comment (no movable tags in the gate).
- *   GP3  the ruleset payload parses, targets the default branch, ships in `evaluate`
- *        enforcement (dry-run by default — flipping to `active` is the operator's deliberate
- *        act), and carries the four rules: deletion, non_fast_forward, pull_request,
- *        required_status_checks in strict mode.
- *   GP4  the ruleset's required check context equals the job id both payload workflows define
- *        — the rule and the workflows can never name different checks.
+ *   GP3  the ruleset payload parses, targets the default branch, ships in `disabled`
+ *        enforcement (POSTable on EVERY plan — `evaluate` is Enterprise-gated and 422s
+ *        elsewhere; flipping to `active` is the operator's deliberate act), and carries the
+ *        four rules: deletion, non_fast_forward, pull_request, required_status_checks in
+ *        strict mode with every required check pinned to the GitHub Actions app
+ *        (integration_id 15368 — an unpinned context is satisfiable by any commit status).
+ *   GP4  the ruleset's required contexts and the workflows' job ids are the SAME SET (a
+ *        phantom context would wedge every merge once active; an uncovered job would gate
+ *        nothing), and no job carries a display `name:` override, which would change the
+ *        check-run context GitHub reports out from under the ruleset.
  *
  * (The dogfood .github/workflows/test.yml is byte-locked to the payload workflow by PS2, so
  * everything proven here holds for this repo's own gate too.)
@@ -66,11 +70,15 @@ check('GP2 every action in the payload workflows is pinned to a full commit SHA 
   assert.ok(uses >= 2, `expected at least one \`uses:\` per payload workflow (found ${uses}) — refusing a vacuous pass`)
 })
 
-check('GP3 the ruleset payload is a POSTable dry-run-by-default branch ruleset with the four rules', () => {
+check('GP3 the ruleset payload is a POSTable-on-every-plan, off-by-default branch ruleset with the four rules', () => {
   const rs = JSON.parse(read(RULESET))
   assert.equal(rs.target, 'branch', 'ruleset target must be "branch"')
-  assert.equal(rs.enforcement, 'evaluate',
-    'the SHIPPED ruleset must be "evaluate" (dry-run): flipping to "active" is the operator\'s deliberate act after watching it, never the default')
+  // "disabled", not "evaluate": evaluate (dry-run + Rule Insights) is a GitHub Enterprise
+  // feature — shipping it would 422 the documented POST on Free/Pro/Team, the plans most
+  // target repos are on. Disabled lands the configured ruleset inert on every plan; flipping
+  // it to "active" is the operator's one deliberate click.
+  assert.equal(rs.enforcement, 'disabled',
+    'the SHIPPED ruleset must be "disabled": POSTable on every plan (evaluate is Enterprise-gated), and turning it on is the operator\'s deliberate act, never the default')
   assert.deepEqual(rs.conditions?.ref_name?.include, ['~DEFAULT_BRANCH'], 'the ruleset must target the default branch via the ~DEFAULT_BRANCH macro')
   const types = (rs.rules ?? []).map((r) => r.type).sort()
   assert.deepEqual(types, ['deletion', 'non_fast_forward', 'pull_request', 'required_status_checks'],
@@ -79,16 +87,32 @@ check('GP3 the ruleset payload is a POSTable dry-run-by-default branch ruleset w
   assert.equal(rsc.parameters?.strict_required_status_checks_policy, true, 'required status checks must be strict (branch up to date before merge)')
   assert.ok(Array.isArray(rsc.parameters?.required_status_checks) && rsc.parameters.required_status_checks.length >= 1,
     'the ruleset must require at least one status check — that requirement IS the gate')
+  for (const c of rsc.parameters.required_status_checks) {
+    // 15368 is the GitHub Actions app (api.github.com/apps/github-actions); without the pin a
+    // required context is satisfiable from ANY source — one legacy commit-status POST by
+    // anyone with push access would green a red gate.
+    assert.equal(c.integration_id, 15368,
+      `required check "${c.context}" must pin integration_id 15368 (the GitHub Actions app) — an unpinned context is satisfiable by a hand-posted commit status`)
+  }
 })
 
-check('GP4 the required check context equals the job id both payload workflows define', () => {
+check('GP4 the required contexts and the workflows\' job ids are the same set, with no display-name overrides', () => {
   const rs = JSON.parse(read(RULESET))
-  const contexts = rs.rules.find((r) => r.type === 'required_status_checks').parameters.required_status_checks.map((c) => c.context)
+  const contexts = rs.rules.find((r) => r.type === 'required_status_checks').parameters.required_status_checks.map((c) => c.context).sort()
   for (const wf of WORKFLOWS) {
-    const job = read(wf).match(/^jobs:\n {2}([A-Za-z0-9_-]+):/m)
-    assert.ok(job, `${wf}: could not find the first job id under jobs:`)
-    assert.ok(contexts.includes(job[1]),
-      `${wf} defines job "${job[1]}" but the ruleset requires [${contexts.join(', ')}] — a required check naming a job that never runs blocks nothing (or everything)`)
+    const yml = read(wf)
+    // every job id at the 2-space level under jobs: — set-equality with the contexts, both
+    // directions: a phantom context wedges every merge once active (the check never runs, so
+    // it never passes); an uncovered job means the gate requires less than the workflow runs.
+    const jobsBlock = yml.slice(yml.search(/^jobs:/m))
+    const ids = [...jobsBlock.matchAll(/^ {2}([A-Za-z0-9_-]+):/gm)].map((m) => m[1]).sort()
+    assert.ok(ids.length >= 1, `${wf}: no job ids found under jobs:`)
+    assert.deepEqual(contexts, ids,
+      `${wf} defines jobs [${ids.join(', ')}] but the ruleset requires [${contexts.join(', ')}] — these must be the SAME SET: a phantom context blocks every merge forever, an uncovered job gates nothing`)
+    // a jobs.<id>.name display name REPLACES the job id as the check-run context GitHub
+    // reports — it would defeat the equality above silently, so the payload must not carry one
+    // (step-level `- name:` lines sit deeper and are fine).
+    assert.ok(!/^ {4}name:/m.test(jobsBlock), `${wf}: a job-level \`name:\` override changes the check context out from under the ruleset — remove it or update the ruleset contexts`)
   }
 })
 

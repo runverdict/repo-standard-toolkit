@@ -158,14 +158,18 @@ and no AI hits the same gate.
    `gh api repos/{owner}/{repo}/rulesets` and stand down with a note when one named
    `repo-standard` already exists (a re-run must not stack duplicates), else apply it with
    `gh api repos/{owner}/{repo}/rulesets --method POST --input ${CLAUDE_PLUGIN_ROOT}/payload/rulesets/repo-standard.json`.
-   Without `gh`, or on an API refusal (403/404 means no admin rights or a plan without
-   rulesets on private repos — information, never something to retry blindly), print the
-   manual path instead: Settings → Rules → Rulesets → New branch ruleset → require the `test`
-   status check on the default branch. Describe it honestly: the payload ships with
-   `"enforcement": "evaluate"`, a dry run that only LOGS what would have been blocked
-   (Settings → Rules → Insights), and flipping it to `active` is the operator's deliberate
-   act after watching a few pushes. Until the ruleset exists AND is active, a red CI run
-   blocks nothing — whatever state this step ends in, the recap says so in those words.
+   Without `gh`, or on an API refusal (403/404: no admin rights, or a plan without rulesets —
+   private repos below Pro have none; 422: a field the plan does not support — each is
+   information, never something to retry blindly), print the manual path instead: Settings →
+   Rules → Rulesets → New branch ruleset → require the `test` status check on the default
+   branch. Describe it honestly: the payload ships with `"enforcement": "disabled"` — the
+   ruleset lands fully configured but INERT, on every GitHub plan (`evaluate`, the dry-run
+   mode, is Enterprise-only, which is exactly why it is not the default) — and turning it on
+   is the operator's one deliberate act: Settings → Rules → Rulesets → repo-standard →
+   Active (Enterprise operators may pass through Evaluate first). The required check is
+   pinned to the GitHub Actions app, so only the real workflow can satisfy it. Until the
+   ruleset is ACTIVE, a red CI run blocks nothing — whatever state this step ends in, the
+   recap says so in those words.
 
 10. **Offer the local pre-push check — do not assume it.** Once the suite is green, ask
    (AskUserQuestion) whether the operator wants the optional pre-push hygiene check, and install
@@ -192,9 +196,10 @@ Report the lint's verdict with skips AS skips — "N passed, 1 skipped (RS-locks
 manifest)", with N being whatever the lint itself printed — never folded into a pass count, and
 never "all checks pass" when anything was skipped or disabled: a skip the lint prints loudly
 must stay loud in the recap, or the recap inflates exactly the claim this toolkit exists to
-police. State the blocking status in plain words — "the check is required and active", "the
-ruleset is in evaluate (dry-run): a red run logs but does not block", or "no ruleset: a red run
-turns the badge red and blocks nothing" — never imply the gate blocks when it only reports.
+police. State the blocking status in plain words — "the check is required and active", "the ruleset is
+installed but disabled: a red run blocks nothing until the operator activates it", or "no
+ruleset: a red run turns the badge red and blocks nothing" — never imply the gate blocks when
+it only reports.
 Name the recorded `scaffold.pluginVersion` — the payload version that now governs the repo.
 State plainly that the standard is now enforced by the committed lint in CI, not by this plugin
 — removing the plugin changes nothing about enforcement. If the pre-push hook was installed, say

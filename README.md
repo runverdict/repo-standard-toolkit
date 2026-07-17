@@ -89,9 +89,12 @@ Optionally, if you say yes when asked: a `pre-push` hook in `.git/hooks/` that r
 locally before each push (see [The optional pre-push check](#the-optional-pre-push-check)),
 and a GitHub branch ruleset (`payload/rulesets/repo-standard.json`, applied via `gh api`) that
 makes the `test` check REQUIRED on the default branch — the piece that turns a red run into a
-blocked merge instead of a red badge. The ruleset ships in `evaluate` (dry-run) enforcement;
-you flip it to `active` after watching it. Until a repo requires the check, a red CI run
-blocks nothing — the skill and the recap say so rather than implying otherwise.
+blocked merge instead of a red badge. The ruleset ships `disabled`: fully configured, inert,
+and installable on every GitHub plan (the `evaluate` dry-run mode is Enterprise-only, which is
+why it is not the default) — you flip it to `active` in Settings when ready, and the required
+check is pinned to the GitHub Actions app so a hand-posted status cannot satisfy it. Until the
+ruleset is active, a red CI run blocks nothing — the skill and the recap say so rather than
+implying otherwise.
 
 ## The standards it embodies
 

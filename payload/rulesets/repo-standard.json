@@ -1,7 +1,7 @@
 {
   "name": "repo-standard",
   "target": "branch",
-  "enforcement": "evaluate",
+  "enforcement": "disabled",
   "conditions": {
     "ref_name": {
       "include": ["~DEFAULT_BRANCH"],
@@ -26,7 +26,7 @@
       "parameters": {
         "strict_required_status_checks_policy": true,
         "required_status_checks": [
-          { "context": "test" }
+          { "context": "test", "integration_id": 15368 }
         ]
       }
     }
