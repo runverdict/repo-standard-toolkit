@@ -598,32 +598,40 @@ const licenseIdOf = (text) =>
   : /Mozilla Public License Version 2\.0/.test(text) ? 'MPL-2.0'
   : /Neither the name of the copyright holder|BSD 3-Clause/i.test(text) ? 'BSD-3-Clause'
   : /BSD 2-Clause/i.test(text) ? 'BSD-2-Clause'
+  : /^MIT No Attribution\b/m.test(text) ? 'MIT-0'
   : /^MIT License/m.test(text) ? 'MIT'
   : /Redistribution and use in source and binary forms/.test(text) ? 'unrecognized' // some BSD variant; say so rather than guess
-  : /Permission is hereby granted, free of charge/.test(text) ? 'MIT'
+  // the bare grant sentence is shared across the MIT family (MIT-0 drops the notice-preservation
+  // condition) — claim MIT only when that condition is present too, else say so rather than guess.
+  : /Permission is hereby granted, free of charge/.test(text)
+    ? (/above copyright notice and this permission notice/i.test(text) ? 'MIT' : 'unrecognized')
   : 'unrecognized'
 const licenseText = licenseFile ? read(licenseFile) : null
 const licenseId = licenseText && licenseText.trim() ? licenseIdOf(licenseText) : null
 // a detected id matches a declared one exactly, or with the GNU -only/-or-later suffix the
 // license TEXT alone cannot distinguish — that grant choice lives in the declaration.
 const idMatches = (declared) => declared === licenseId || declared === `${licenseId}-only` || declared === `${licenseId}-or-later`
+// EVERY existing JSON manifest is consulted — checking only the first would let package.json
+// (the manifest npm actually reads) contradict the LICENSE whenever plugin.json omits the field.
+const licenseManifests = ['.claude-plugin/plugin.json', 'package.json'].filter((p) => exists(p))
+const manifestDeclaresLicense = licenseManifests.some((p) => {
+  try { const v = JSON.parse(read(p)).license; return v !== undefined && v !== null } catch { return false }
+})
 
 gate('license', `RS-license ${licenseFile ?? 'LICENSE'} exists and its id agrees with the manifest and README`, () => {
   assert.ok(licenseFile !== null, `no license file at the repo root (looked for ${LICENSE_CANDIDATES.join(', ')}) — GitHub cannot supply a LICENSE org-wide, so a governed repo carries its own; add one, or disable checks.license with a stated reason`)
   assert.ok(licenseText.trim().length > 0, `${licenseFile} is empty — an empty license file licenses nothing`)
   if (licenseId === 'unrecognized') return // agreement is unverifiable — the named SKIP below says so out loud
-  // manifest agreement: the first JSON manifest that exists (the same pair the lockstep
-  // auto-detect trusts). The legacy object/array license form is itself the failure — npm
-  // deprecated it, and it renders as "[object Object]" anywhere a string is expected.
-  const manifestPath = ['.claude-plugin/plugin.json', 'package.json'].find((p) => exists(p))
-  if (manifestPath) {
+  // manifest agreement: every existing JSON manifest that declares a license must agree. The
+  // legacy object/array license form is itself the failure — npm deprecated it, and it renders
+  // as "[object Object]" anywhere a string is expected.
+  for (const manifestPath of licenseManifests) {
     let mf
     try { mf = JSON.parse(read(manifestPath)) } catch (e) { throw new Error(`${manifestPath} is not valid JSON, so its license field cannot be checked: ${e.message}`) }
-    if (mf.license !== undefined && mf.license !== null) {
-      assert.ok(typeof mf.license === 'string', `${manifestPath} "license" uses the deprecated object/array form — declare a string SPDX expression (e.g. "${licenseId}")`)
-      const tokens = mf.license.split(/[\s()]+/).filter(Boolean)
-      assert.ok(tokens.some(idMatches), `${manifestPath} declares license "${mf.license}" but ${licenseFile} carries ${licenseId} — the manifest and the license file must agree`)
-    }
+    if (mf.license === undefined || mf.license === null) continue
+    assert.ok(typeof mf.license === 'string', `${manifestPath} "license" uses the deprecated object/array form — declare a string SPDX expression (e.g. "${licenseId}")`)
+    const tokens = mf.license.split(/[\s()]+/).filter(Boolean)
+    assert.ok(tokens.some(idMatches), `${manifestPath} declares license "${mf.license}" but ${licenseFile} carries ${licenseId} — the manifest and the license file must agree`)
   }
   // README agreement: the License section (RS-readme already requires it last and non-empty)
   // must name the id the license file carries.
@@ -641,6 +649,13 @@ gate('license', `RS-license ${licenseFile ?? 'LICENSE'} exists and its id agrees
 })
 if (!disabled.license && licenseId === 'unrecognized') {
   skipCheck('RS-license (id agreement)', `${licenseFile} is not a recognized standard license text — LICENSE ⟺ manifest ⟺ README agreement cannot be checked; existence and non-emptiness were`)
+}
+// the ✓ line above must not imply a manifest agreement that never ran: when no manifest
+// declares a license there is nothing to compare, and that absence is stated, not passed.
+if (!disabled.license && licenseId && licenseId !== 'unrecognized' && !manifestDeclaresLicense) {
+  skipCheck('RS-license (manifest leg)', licenseManifests.length
+    ? `${licenseManifests.join(' and ')} declare${licenseManifests.length === 1 ? 's' : ''} no license field — LICENSE ⟺ manifest agreement not checkable (the scaffold skill backfills the field); the README leg still ran`
+    : 'no version manifest exists — LICENSE ⟺ manifest agreement not checkable; the README leg still ran')
 }
 
 // ─────────────────────────────────────────────────────────────────── RS-placeholders

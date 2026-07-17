@@ -225,9 +225,13 @@ const licenseFromFile = licenseText === null ? null
   : /Mozilla Public License Version 2\.0/.test(licenseText) ? 'MPL-2.0'
   : /Neither the name of the copyright holder|BSD 3-Clause/i.test(licenseText) ? 'BSD-3-Clause'
   : /BSD 2-Clause/i.test(licenseText) ? 'BSD-2-Clause'
+  : /^MIT No Attribution\b/m.test(licenseText) ? 'MIT-0'
   : /^MIT License/m.test(licenseText) ? 'MIT'
   : /Redistribution and use in source and binary forms/.test(licenseText) ? 'unrecognized' // some BSD variant; say so rather than guess
-  : /Permission is hereby granted, free of charge/.test(licenseText) ? 'MIT'
+  // the bare grant sentence is shared across the MIT family (MIT-0 drops the notice-preservation
+  // condition) — claim MIT only when that condition is present too, else say so rather than guess.
+  : /Permission is hereby granted, free of charge/.test(licenseText)
+    ? (/above copyright notice and this permission notice/i.test(licenseText) ? 'MIT' : 'unrecognized')
   : 'unrecognized'
 // tagline fallback: the first paragraph line after the existing README's H1 (the repo already
 // states its own tagline on its front page — do not re-ask the operator for it). Read the

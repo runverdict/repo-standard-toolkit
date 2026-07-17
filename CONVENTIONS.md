@@ -97,9 +97,9 @@ enforced by its own installed copy of `acceptance/test-repo-standard.mjs` (scope
   [Contributor Covenant](https://www.contributor-covenant.org/), currently 3.0) exist and open
   with an H1.
 - **LICENSE is lint-governed too.** A license file exists at the repo root; when its text is a
-  recognizable standard license, the plugin manifest's `license` field and the README's License
-  section must name the same id. An unrecognized text is a loud named skip, never a silent
-  pass.
+  recognizable standard license, every manifest that declares a `license` field and the
+  README's License section must name the same id. What cannot be compared — an unrecognized
+  text, a manifest without the field — is a loud named skip, never a silent pass.
 - **No shadowed meta files.** A governed doc exists in exactly one of `.github/`, the repo
   root, or `docs/` — GitHub serves the highest-precedence copy, so a duplicate is served drift
   the content checks cannot see.

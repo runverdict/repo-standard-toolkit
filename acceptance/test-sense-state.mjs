@@ -389,9 +389,14 @@ try {
   check('SS9: a bare MIT grant with no title line still derives MIT (the fallback branch is load-bearing)', () => {
     const d = join(tmp, 'lic-mit-bare')
     mkdirSync(d)
-    // the very common MIT LICENSE that omits the "MIT License" title and opens on the copyright
-    writeFileSync(join(d, 'LICENSE'), 'Copyright (c) 2020 Someone\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software...\n')
+    // the very common MIT LICENSE that omits the "MIT License" title and opens on the copyright —
+    // the notice-preservation condition is what makes the untitled text MIT rather than MIT-0.
+    writeFileSync(join(d, 'LICENSE'), 'Copyright (c) 2020 Someone\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software...\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n')
     assert.equal(sense(d).derived.licenseId, 'MIT')
+  })
+  check('SS9: MIT-0 is not mislabeled MIT, and a bare grant without the notice condition is unrecognized', () => {
+    assert.equal(lic('mit0', 'MIT No Attribution\n\nCopyright (c) 2026 Acme\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software.\n'), 'MIT-0')
+    assert.equal(lic('grant-only', 'Copyright (c) 2026 Acme\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software.\n'), 'unrecognized')
   })
   check('SS9: git signals do not leak from an ancestor repository', () => {
     // tmp itself is not a repo; make one, then sense a plain subdir inside it

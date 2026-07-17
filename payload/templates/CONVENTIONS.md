@@ -57,9 +57,9 @@ published specs, not invented here:
 - **Stable meta files** — SECURITY, CONTRIBUTING, and CODE_OF_CONDUCT (the
   [Contributor Covenant](https://www.contributor-covenant.org/)) exist and open with an H1.
 - **LICENSE is lint-governed too.** A license file exists at the repo root; when its text is a
-  recognizable standard license, the version manifest's license field and the README's License
-  section must name the same id — an unrecognized text is a loud named skip, never a silent
-  pass.
+  recognizable standard license, every manifest that declares a license field and the README's
+  License section must name the same id. What cannot be compared — an unrecognized text, a
+  manifest without the field — is a loud named skip, never a silent pass.
 - **No shadowed meta files.** A governed doc exists in exactly one of `.github/`, the repo
   root, or `docs/` — GitHub serves the highest-precedence copy, so a duplicate is served drift
   the content checks cannot see.

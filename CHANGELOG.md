@@ -91,10 +91,13 @@ from the first push: the standard the plugin installs is the standard it lives u
   RS-stable-docs cannot hold it) was deletable while CI stayed green. The new `license` check
   requires a root license file (LICENSE / LICENCE / COPYING families, `.md`/`.txt` accepted),
   requires it non-empty, fingerprints the text with the same heuristics `sense-state` uses, and
-  — when the text is a recognizable standard license — requires the version manifest's
-  `license` field (string form only; the deprecated npm object/array form reddens) and the
-  README's License section to name the same id, GNU `-only`/`-or-later` suffixes accepted. An
-  unrecognized text passes existence and skips agreement as a named, printed skip.
+  — when the text is a recognizable standard license — requires EVERY version manifest that
+  declares a `license` field (string form only; the deprecated npm object/array form reddens)
+  and the README's License section to name the same id, GNU `-only`/`-or-later` suffixes
+  accepted. What cannot be compared is a named skip, never an implied agreement: an
+  unrecognized text skips the whole agreement leg, a manifest with no license field skips the
+  manifest leg. The fingerprint knows MIT-0 and refuses to guess MIT from the shared grant
+  sentence alone — a text is recognized by what distinguishes it, or it is `unrecognized`.
 
 **RS-placeholders — hand-copied templates cannot pass half-filled**
 - `fill-template` refuses an unfilled placeholder, but a template copied by hand never meets

@@ -304,6 +304,24 @@ expect('LB-S-license-expression an SPDX expression containing the detected id st
   (f) => { f['package.json'] = '{ "name": "fixture", "version": "1.2.3", "license": "(MIT OR Apache-2.0)" }\n' }, 0)
 expect('LB-S-license-copying the GPL convention (COPYING) counts as the license file',
   (f) => { f['COPYING'] = f['LICENSE']; f['LICENSE'] = null }, 0)
+expect('LB-S-license-mit0 a self-consistent MIT-0 repo stays green (the fingerprint no longer guesses MIT)',
+  (f) => {
+    f['LICENSE'] = 'MIT No Attribution\n\nCopyright (c) 2026 fixture\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software, to deal in the Software without restriction.\n'
+    f['package.json'] = '{ "name": "fixture", "version": "1.2.3", "license": "MIT-0" }\n'
+    f['README.md'] = f['README.md'].replace('## License\n\nMIT.', '## License\n\nMIT-0.')
+  }, 0)
+expect('LB-S-license-grant-only a grant sentence WITHOUT the notice-preservation condition is unrecognized, not "MIT"',
+  (f) => { f['LICENSE'] = 'Copyright (c) 2026 fixture\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software.\n' }, 0,
+  'RS-license (id agreement) SKIP')
+expect('LB-M-license-second-manifest a license-less plugin manifest cannot hide a disagreeing package.json (EVERY manifest is consulted)',
+  (f) => {
+    f['.claude-plugin/plugin.json'] = '{ "name": "fixture", "version": "1.2.3" }\n'
+    f['package.json'] = '{ "name": "fixture", "version": "1.2.3", "license": "Apache-2.0" }\n'
+  }, 1,
+  '✗ RS-license', 'package.json declares license "Apache-2.0"')
+expect('LB-S-license-manifest-skip a manifest with no license field prints a named manifest-leg SKIP, never an implied agreement',
+  (f) => { f['package.json'] = '{ "name": "fixture", "version": "1.2.3" }\n' }, 0,
+  'RS-license (manifest leg) SKIP')
 expect('LB-M-placeholders an unfilled {{PLACEHOLDER}} token in prose reddens RS-placeholders',
   (f) => { f['README.md'] = f['README.md'].replace('Clone it.', 'Clone {{PROJECT_NAME}} first.') }, 1,
   '✗ RS-placeholders', 'unfilled template placeholder {{PROJECT_NAME}}')
