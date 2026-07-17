@@ -14,6 +14,14 @@ keeps its section, tagged `[YANKED]` after the date.
 
 ### Changed
 
+- The README template now carries a conditional CI-badge TODO: when the target repo has a
+  GitHub remote, the scaffold inserts a badge for the exact workflow it installed (real slug
+  from `git remote get-url origin`, real filename) above the tagline; a remote-less repo gets
+  no badge — a badge pointing nowhere is a fabricated claim. A Documentation/docs-pages
+  section is deliberately NOT templated: a greenfield repo has nothing to link, so the
+  hub-and-spoke pattern lives in the skill's reconcile guidance (step 6) for READMEs that
+  have outgrown their front page, with the RS-shadow basename and `docs.extra` governance
+  rules spelled out.
 - The README is now a hub, not a wall: deep-dive material moved to three governed docs pages —
   [Enforcement](docs/enforcement.md) (the 14 checks as a table, the ruleset, the hook),
   [Configuration](docs/configuration.md), and [Design](docs/design.md) (the load-bearing

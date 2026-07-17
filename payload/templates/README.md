@@ -2,6 +2,13 @@
 
 **{{TAGLINE}}**
 
+<!-- TODO(scaffold): if this repo has a GitHub remote, insert a CI badge line ABOVE the bold
+tagline (standard-readme puts badges between the title and the short description):
+[![CI](https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg)](https://github.com/<owner>/<repo>/actions/workflows/<file>)
+— with the REAL owner/repo from `git remote get-url origin` and the REAL workflow filename the
+scaffold installed (test.yml or repo-standard.yml), never a guessed slug. If the repo has no
+remote, delete this comment: a badge pointing nowhere is a fabricated claim. -->
+
 <!-- TODO(scaffold): one short paragraph expanding the tagline — what this is, who it is for,
 and the one-sentence reason it exists. Grounded in the real code, never aspirational. -->
 

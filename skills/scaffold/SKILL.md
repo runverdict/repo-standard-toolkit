@@ -109,7 +109,9 @@ and no AI hits the same gate.
    Then replace every `TODO(scaffold)` comment with real prose grounded in the actual
    repo — read the entry points, manifests, and code before writing Install/Usage/Background;
    SECURITY's GitHub-reporting bullet is added only when a real remote exists (its TODO says
-   how), so a remote-less repo ships the email channel alone, never a fabricated link. Never
+   how), so a remote-less repo ships the email channel alone, never a fabricated link; the
+   README's CI-badge TODO follows the same rule — the real slug and the workflow filename
+   step 7 actually installed, or delete the comment. Never
    write a capability, benchmark, user count, or endorsement you cannot verify from the repo
    itself; an honest thin section beats a padded false one, and the Caveats section is where
    the limits go. The lint reddens on any `TODO(scaffold)` left behind, so an unfinished
@@ -118,6 +120,12 @@ and no AI hits the same gate.
    LICENSE file must agree, and the edit goes in the recap.
 
 6. **Reconcile what exists.** Run `node acceptance/test-repo-standard.mjs` from the repo root.
+   For a README that has outgrown its front page (long walls a first-time reader must scroll
+   past), the recommended reconcile is hub-and-spoke: move deep-dive sections verbatim into
+   linked `docs/` pages and keep short summaries — but the moved pages must avoid governed
+   basenames (RS-shadow reddens a `docs/README.md`), should be added to `docs.extra` so the
+   voice/TODO/placeholder sweeps govern them, and any test or count that pins README content
+   must keep resolving. Never move what a standing check anchors to the README.
    For every failure on a pre-existing doc, make the smallest edit that satisfies the standard
    and preserve the author's prose: an ad-hoc CHANGELOG `### Notes` section is re-homed under
    the right canonical category (as bullets or a bold lead-in), never deleted; a stale count is
