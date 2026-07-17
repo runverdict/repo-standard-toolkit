@@ -12,6 +12,19 @@ keeps its section, tagged `[YANKED]` after the date.
 
 ## [Unreleased]
 
+### Changed
+
+- The README is now a hub, not a wall: deep-dive material moved to three governed docs pages —
+  [Enforcement](docs/enforcement.md) (the 14 checks as a table, the ruleset, the hook),
+  [Configuration](docs/configuration.md), and [Design](docs/design.md) (the load-bearing
+  principle, the origin, and the deliberate rejections, now public instead of living only in
+  commit messages). The README keeps Quick Start, the two-layer table, Caveats, and short
+  linked summaries; a badge row (CI, release, license, dependencies-none) replaces nothing but
+  says only what is live. The new pages are listed in `docs.extra`, so the voice ban, TODO
+  sweep, placeholder sweep, and shadow check govern them like every other meta doc, and the
+  status line's "14 lint checks" is a machine-bound count against the lint's own check
+  header — the stat line that cannot go stale.
+
 ### Fixed
 
 - The README's install instructions and two test comments pointed at the catalog's pre-rename
