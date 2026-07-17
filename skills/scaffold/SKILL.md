@@ -36,8 +36,12 @@ and no AI hits the same gate.
    and the `derived` values. Re-run this even if you scaffolded this repo earlier in the same
    conversation — idempotency comes from sensing the tree, not from remembering what you did.
 
-2. **Confirm the plan with the operator.** Present the classification, the plan table, and the
-   derived placeholder values. Ask (AskUserQuestion) for what is genuinely theirs to decide:
+2. **Confirm the plan with the operator — unless there is nothing to decide.** When every plan
+   action is `audit` or `keep` and no step-2 value is missing, the run is a no-op reconcile:
+   skip the confirmation and the questions entirely, proceed, and say so in the recap —
+   interrogating the operator to approve nothing is noise, not diligence. Otherwise present
+   the classification, the plan table, and the derived placeholder values. Ask
+   (AskUserQuestion) for what is genuinely theirs to decide:
    license (`Apache-2.0` recommended default / `MIT` / keep existing), the **copyright holder**
    (the LICENSE line and the README's `© holder` footer — legally meaningful, never guessed;
    suggest the git author or org name as the option, but they choose), the security-report and
@@ -156,6 +160,10 @@ End every run with two lists. **Automated:** every file created / modified / upg
 each, with the reconcile before→after quotes and which template or engine produced it.
 **Manual:** what only the operator can finish — reviewing the generated prose, supplying any
 contact/tagline left open, committing and pushing, and (once pushed) confirming the CI gate ran.
+Report the lint's verdict with skips AS skips — "10 passed, 1 skipped (RS-lockstep: no version
+manifest)" — never folded into a pass count, and never "all N checks pass" when anything was
+skipped or disabled: a skip the lint prints loudly must stay loud in the recap, or the recap
+inflates exactly the claim this toolkit exists to police.
 State plainly that the standard is now enforced by the committed lint in CI, not by this plugin
 — removing the plugin changes nothing about enforcement. If the pre-push hook was installed, say
 where it lives, that it is local-only and uncommitted (a teammate who wants it re-runs this
