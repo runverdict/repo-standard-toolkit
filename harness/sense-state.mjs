@@ -73,12 +73,15 @@ const opensWithH1 = (text) => {
   return /^# +\S/.test(first)
 }
 const artifacts = {}
+// a path is a candidate only if it is a readable FILE — existsSync alone would let a
+// DIRECTORY named .github/README.md mask a healthy root README as "missing".
+const isFile = (p) => { try { return statSync(join(target, p)).isFile() } catch { return false } }
 for (const doc of DOCS) {
   // GitHub serves README and the community health files with precedence .github/ > root >
   // docs/ — sense where a doc ACTUALLY lives, so the plan audits an existing .github/ copy
   // instead of scaffolding a root duplicate that would shadow it or be shadowed by it. The
   // first hit is what GitHub renders; further hits are duplicates the lint's RS-shadow reddens.
-  const found = [`.github/${doc}`, doc, `docs/${doc}`].filter((p) => existsSync(join(target, p)))
+  const found = [`.github/${doc}`, doc, `docs/${doc}`].filter(isFile)
   const text = found.length ? readIf(found[0]) : null
   artifacts[doc] = text === null
     ? { exists: false }
@@ -90,8 +93,14 @@ for (const doc of DOCS) {
       ...(found.length > 1 ? { duplicates: found.slice(1) } : {}),
     }
 }
-const licenseText = readIf('LICENSE')
-artifacts.LICENSE = licenseText === null ? { exists: false } : { exists: true, bytes: Buffer.byteLength(licenseText) }
+// licensee's filename family, most conventional first — mirrored in the payload lint's
+// RS-license candidates: a repo licensed via COPYING (the GPL convention) or LICENSE.md is
+// licensed, not license-less, and scaffolding a second license file beside it would break
+// GitHub's license detection outright.
+const LICENSE_CANDIDATES = ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENCE', 'LICENCE.md', 'LICENCE.txt', 'COPYING', 'COPYING.md', 'COPYING.txt', 'UNLICENSE']
+const licenseFileRel = LICENSE_CANDIDATES.find(isFile) ?? null
+const licenseText = licenseFileRel ? readIf(licenseFileRel) : null
+artifacts.LICENSE = licenseText === null ? { exists: false } : { exists: true, path: licenseFileRel, bytes: Buffer.byteLength(licenseText) }
 
 // ---- enforcement ----
 const lintText = readIf(LINT_REL)
@@ -221,8 +230,9 @@ const licenseFromFile = licenseText === null ? null
   : /Permission is hereby granted, free of charge/.test(licenseText) ? 'MIT'
   : 'unrecognized'
 // tagline fallback: the first paragraph line after the existing README's H1 (the repo already
-// states its own tagline on its front page — do not re-ask the operator for it).
-const readmeText = readIf('README.md')
+// states its own tagline on its front page — do not re-ask the operator for it). Read the
+// SENSED README — a repo whose README lives in .github/ or docs/ states its tagline there.
+const readmeText = artifacts['README.md'].exists ? readIf(artifacts['README.md'].path) : null
 let readmeTagline = null
 if (readmeText) {
   const h1 = readmeText.match(/^# +.+$/m)
@@ -271,7 +281,7 @@ if (asJson) {
     const notes = [
       a.exists && a.hasH1 === false ? '(no H1)' : null,
       a.exists && a.path && a.path !== doc ? `(at ${a.path})` : null,
-      a.exists && a.duplicates ? `(DUPLICATE: also at ${a.duplicates.join(', ')} — GitHub serves ${a.path})` : null,
+      a.exists && a.duplicates ? `(DUPLICATE: also at ${a.duplicates.join(', ')} — one governed copy only; the lint's RS-shadow reddens on this)` : null,
     ].filter(Boolean)
     console.log(`  ${a.exists ? '●' : '○'} ${doc}${notes.length ? '  ' + notes.join(' ') : ''}`)
   }

@@ -23,6 +23,10 @@
  *   SS11 doc sensing is location-aware (.github/ > root > docs/, GitHub's precedence): a doc
  *        living only in .github/ is sensed and audited (never re-scaffolded at root), and a
  *        cross-location duplicate is reported with the served path named.
+ *   SS12 sensing honesty hardenings from the adversarial review: the license filename family
+ *        (LICENSE.md / COPYING / …) counts as licensed — matching the lint's RS-license — a
+ *        DIRECTORY named like a doc cannot mask the real file, and the tagline fallback reads
+ *        the SENSED README, not a hardcoded root path.
  *
  * Dependency-free: node acceptance/test-sense-state.mjs
  */
@@ -228,6 +232,32 @@ try {
     assert.deepEqual(r.artifacts['CONTRIBUTING.md'].duplicates, ['CONTRIBUTING.md'])
     const human = execFileSync('node', [ENGINE, '--target', d], { encoding: 'utf8' })
     assert.ok(human.includes('DUPLICATE'), `the human output must warn about the shadowed duplicate, got:\n${human}`)
+  })
+
+  // ---- SS12: sensing honesty hardenings (each was a confirmed adversarial-review finding) ----
+  check('SS12: the license filename family counts as licensed (LICENSE.md, COPYING — matching RS-license)', () => {
+    const md = join(tmp, 'lic-md')
+    mkdirSync(md)
+    writeFileSync(join(md, 'LICENSE.md'), 'MIT License\n\nCopyright (c) 2026 Acme\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software.\n\nThe above copyright notice and this permission notice shall be included in all copies.\n')
+    const r = sense(md)
+    assert.equal(r.artifacts.LICENSE.exists, true, 'LICENSE.md is a license file, not license-less')
+    assert.equal(r.artifacts.LICENSE.path, 'LICENSE.md')
+    assert.equal(r.derived.licenseId, 'MIT')
+    assert.equal(planAction(r, 'LICENSE'), 'audit', 'never scaffold a second license file beside an existing one')
+  })
+  check('SS12: a DIRECTORY named .github/README.md cannot mask the real root README', () => {
+    const d = join(tmp, 'dir-mask')
+    mkdirSync(join(d, '.github', 'README.md'), { recursive: true })
+    writeFileSync(join(d, 'README.md'), '# real\n\nThe real README.\n')
+    const r = sense(d)
+    assert.equal(r.artifacts['README.md'].exists, true)
+    assert.equal(r.artifacts['README.md'].path, 'README.md', 'the directory is not a candidate; the file is')
+  })
+  check('SS12: the tagline fallback reads the SENSED README (.github/ or docs/), not only root', () => {
+    const d = join(tmp, 'tagline-gh')
+    mkdirSync(join(d, '.github'), { recursive: true })
+    writeFileSync(join(d, '.github', 'README.md'), '# proj\n\nA tagline that lives in .github.\n')
+    assert.equal(sense(d).derived.tagline, 'A tagline that lives in .github.')
   })
 
   // ---- SS7: bad invocation exits 2 with a message ----
