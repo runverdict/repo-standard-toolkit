@@ -88,6 +88,11 @@ from the first push: the standard the plugin installs is the standard it lives u
 
 ### Fixed
 
+- The lint rejected Keep a Changelog's own `[YANKED]` vocabulary: the dated-heading rule
+  anchored on the date, so a spec-valid `## [x.y.z] - YYYY-MM-DD [YANKED]` heading could never
+  pass a lint that claims to enforce that spec. The heading grammar now allows exactly that tag
+  (and nothing else after the date); the templates and CONVENTIONS document the yanked-release
+  rule, and mutation cases prove both the allowance and that other suffixes still redden.
 - `payload/hooks/pre-push` captured `$?` after an `if` statement, so the exit-2 branch was dead
   code (POSIX: a failed `if` with no `else` exits 0) and a broken `.repo-standard.json` was
   misdiagnosed as doc drift. The hook now runs the lint bare and captures the status on the next

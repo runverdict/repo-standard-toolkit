@@ -278,7 +278,9 @@ gate('changelog', `RS-changelog ${DOC.changelog} follows Keep a Changelog: [Unre
   for (const m of cl.matchAll(/^## +(.+?)\s*$/gm)) {
     assert.match(m[1], /^\[[^\]]+\]/, `${DOC.changelog} H2 "## ${m[1]}" is not a version heading — Keep a Changelog allows only "## [Unreleased]" / "## [x.y.z] - YYYY-MM-DD"`)
     if (!/^\[unreleased\]/i.test(m[1])) {
-      assert.match(m[1], /^\[[^\]]+\]\s+[-–—]\s+\d{4}-\d{2}-\d{2}$/, `${DOC.changelog} version heading "## ${m[1]}" must display its ISO release date: "## [x.y.z] - YYYY-MM-DD" (Keep a Changelog)`)
+      // the optional trailing [YANKED] tag is the spec's own vocabulary for a pulled release —
+      // "## [0.0.5] - 2014-12-13 [YANKED]" — and ONLY that tag: any other suffix is drift.
+      assert.match(m[1], /^\[[^\]]+\]\s+[-–—]\s+\d{4}-\d{2}-\d{2}(?:\s+\[YANKED\])?$/, `${DOC.changelog} version heading "## ${m[1]}" must display its ISO release date: "## [x.y.z] - YYYY-MM-DD" (Keep a Changelog; a pulled release appends " [YANKED]", nothing else)`)
     }
   }
   for (const v of clVersions) assert.match(v, SEMVER, `version heading "[${v}]" is not valid semver`)

@@ -41,7 +41,8 @@ published specs, not invented here:
   version, the ONLY `###` subsections allowed are the six canonical change categories —
   **Added · Changed · Deprecated · Removed · Fixed · Security** — grouped (one heading per
   category per version). `[Unreleased]` stays at the top; concrete versions are
-  reverse-chronological, valid semver, newest matching the version manifest.
+  reverse-chronological, valid semver, newest matching the version manifest. A pulled release
+  keeps its section, tagged `[YANKED]` after the date.
 - **README → [standard-readme](https://github.com/RichardLitt/standard-readme).** Exactly one
   H1; a short **bold tagline** immediately after it (never a blockquote); **Install**,
   **Usage**, and **Contributing** sections; a **Caveats**/limitations section (a standard that

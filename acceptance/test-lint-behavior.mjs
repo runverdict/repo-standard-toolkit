@@ -177,6 +177,11 @@ expect('LB-M-changelog-prerelease a prerelease listed above its same-triple rele
   '✗ RS-changelog', 'must descend')
 expect('LB-S-changelog-hyphen the spec\'s hyphen date separator is accepted alongside the em dash (stays green)',
   (f) => { f['CHANGELOG.md'] = f['CHANGELOG.md'].replace('## [1.2.3] — 2026-01-01', '## [1.2.3] - 2026-01-01') }, 0)
+expect('LB-S-changelog-yanked a spec-valid "[YANKED]" tag after the date stays green (Keep a Changelog\'s own vocabulary)',
+  (f) => { f['CHANGELOG.md'] = f['CHANGELOG.md'].replace('## [1.2.3] — 2026-01-01', '## [1.2.3] — 2026-01-01 [YANKED]') }, 0)
+expect('LB-M-changelog-badsuffix any OTHER suffix after the date still reddens RS-changelog (the [YANKED] allowance is not a hole)',
+  (f) => { f['CHANGELOG.md'] = f['CHANGELOG.md'].replace('## [1.2.3] — 2026-01-01', '## [1.2.3] — 2026-01-01 [PULLED]') }, 1,
+  '✗ RS-changelog', 'ISO release date')
 expect('LB-M-lockstep a manifest version that disagrees with the newest dated CHANGELOG version reddens RS-lockstep',
   (f) => { f['package.json'] = '{ "name": "fixture", "version": "9.9.9" }\n' }, 1,
   '✗ RS-lockstep', 'bump both in lockstep')
