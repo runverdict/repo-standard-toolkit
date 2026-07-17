@@ -31,7 +31,7 @@ A green suite is the bar for a merge. The pass is **zero failures**, never a fix
   then re-copy.
 - **Templates must stay lint-green.** Every `payload/templates/*` fill is proven against the
   shipped lint by a standing test — a template edit that a freshly scaffolded repo would fail on
-  cannot merge.
+  reddens the build.
 - **Enforcement never depends on the agent.** Anything the payload installs into a target repo
   must run with `node` alone — no npm packages, no plugin, no Claude. If your check needs the
   agent, it belongs in the skill, not the payload.

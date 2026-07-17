@@ -73,8 +73,9 @@ Into the target repo, all committed, all dependency-free:
   a marketing-voice ban, machine-checked counts against the real tree, lint ⟺ spec
   reflexivity, stable meta files, no surviving scaffold TODOs or unfilled `{{PLACEHOLDER}}`
   tokens, license agreement (a root license file exists, and a recognizable license text must
-  match every declared manifest license field and the README's License section — what cannot
-  be compared is a named skip), and no governed doc
+  match the declared license in the JSON manifests the lint reads — the plugin manifest and
+  `package.json` — and the README's License section; what cannot be compared is a named
+  skip), and no governed doc
   duplicated across the GitHub-served locations (`.github/` > root > `docs/`). Exit 1 means the
   docs drifted; exit 2 means the config is broken; every skip is a printed, named line.
 - `.repo-standard.json` — the repo's declared scope (see [The config](#the-config)).
@@ -91,8 +92,9 @@ locally before each push (see [The optional pre-push check](#the-optional-pre-pu
 and a GitHub branch ruleset (`payload/rulesets/repo-standard.json`, applied via `gh api`) that
 makes the `test` check REQUIRED on the default branch — the piece that turns a red run into a
 blocked merge instead of a red badge. The ruleset ships `disabled`: fully configured, inert,
-and installable on every GitHub plan (the `evaluate` dry-run mode is Enterprise-only, which is
-why it is not the default) — you flip it to `active` in Settings when ready, and the required
+and installable on every plan that offers rulesets — public repos on all plans, private on
+Pro/Team+; the skill probes before offering (the `evaluate` dry-run mode is Enterprise-only,
+which is why it is not the default) — you flip it to `active` in Settings when ready, and the required
 check is pinned to the GitHub Actions app so a hand-posted status cannot satisfy it. Until the
 ruleset is active, a red CI run blocks nothing — the skill and the recap say so rather than
 implying otherwise.
@@ -227,9 +229,8 @@ never varies enforcement by it.
 
 ## Origin
 
-Born from
-[`ai-readiness-review-toolkit`](https://github.com/runverdict/ai-readiness-review-toolkit),
-where the project-meta governance system was first built and proven: a committed lint
+Born from `ai-readiness-review-toolkit` — a private Verdict toolkit, which is why this section
+carries no link — where the project-meta governance system was first built and proven: a committed lint
 (`test-project-meta-hygiene.mjs`) that fails CI on any drift in README / CHANGELOG /
 CONVENTIONS / COPY-MANIFEST, documented as its CONVENTIONS §11, grounded in Keep a Changelog +
 standard-readme. This plugin is that pattern, generalized. During development the generic core

@@ -10,11 +10,12 @@
     "minSections": 7
   },
 
-  "//counts": "The README/CHANGELOG state the standing-test count; the lint derives the truth from acceptance/ so the claim can never go stale.",
+  "//counts": "The README states the standing-test count (twice); the lint derives the truth from acceptance/ so the claim can never go stale. Scoped to the README on purpose: the CHANGELOG's mention sits inside a dated release block — history, not a live claim — and must not fail forever once the suite grows.",
   "counts": {
     "standing-tests": {
       "pattern": "(\\d[\\d,]*)\\s+(?:dependency-free\\s+)?standing tests",
       "glob": "acceptance/test-*.mjs",
+      "docs": ["README.md"],
       "minMentions": 2
     }
   }

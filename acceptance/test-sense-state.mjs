@@ -17,6 +17,13 @@
  *   SS6 derivation from package.json with no git — projectName/tagline/licenseId derived,
  *       git.isRepo false, hasH1:false reported for a doc without an H1
  *   SS7 bad invocation (file as target, missing dir, unknown flag) → exit 2 with a message
+ *   SS8 derivation fallbacks + precise gate detection: licenseId from a recognizable LICENSE
+ *       file, tagline from the README's first paragraph, an unrecognizable LICENSE derives
+ *       "unrecognized" (never a guess), one unrelated test in a workflow ≠ the gate.
+ *   SS9 derivation precision hardenings (each a confirmed review finding): BSD-2 vs BSD-3,
+ *       MIT-0 vs MIT, inline-bold taglines, badge skipping, broken-manifest shadowing,
+ *       fence-hidden H1s, invalid config → repair, commented-out gates, default-branch
+ *       detection, bare MIT grants, ancestor-repo signal leaks.
  *   SS10 lint drift is DIRECTED by the embedded version constant: older installed → upgrade,
  *        newer installed → downgrade (with a loud stale-plugin warning), constant-less
  *        installed copy → upgrade (predates versioning), and both versions are reported.

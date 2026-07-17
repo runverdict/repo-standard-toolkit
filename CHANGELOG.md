@@ -18,15 +18,26 @@ keeps its section, tagged `[YANKED]` after the date.
   repo name (`runverdict/claude-plugins`). The canonical catalog repo is `runverdict/plugins`
   — the old name resolved only through GitHub's rename redirect — and the wiring test now pins
   the canonical name.
+- Public-readiness pass (adversarially reviewed before flipping the repo public): two "cannot
+  merge" blocking overclaims that survived the 0.2.0 honesty scrub in CONVENTIONS §3 and
+  CONTRIBUTING now say what is true (a violating template reddens the build); RS-license's
+  documentation claimed "every manifest" when the check reads the two JSON manifests — all
+  five statements of that claim (docs, template, lint header) now name exactly what runs;
+  provenance links to the private parent toolkit are de-linked (they 404 for public readers);
+  the standing-tests count scan is scoped to the README so the dated 0.2.0 block stays
+  historical; the suite descriptions in acceptance/README and two test headers caught up with
+  reality (no marketplace manifest, SS8/SS9 documented); the skill gains the plugin-manifest
+  edit grant its backfill step documents, plus cross-link guidance for docs living at
+  non-root locations; and the templates stop attributing the bold tagline and Caveats section
+  to standard-readme — they are house additions, now labeled as such.
 
 ## [0.2.0] - 2026-07-17
 
 ### Added
 
 **The generic enforcement core** (`payload/acceptance/test-repo-standard.mjs`)
-- The proven project-meta lint from
-  [`ai-readiness-review-toolkit`](https://github.com/runverdict/ai-readiness-review-toolkit)
-  (PM1–PM8), generalized into a configurable, dependency-free standing test any repo commits and
+- The proven project-meta lint from `ai-readiness-review-toolkit` (a private Verdict toolkit;
+  PM1–PM8), generalized into a configurable, dependency-free standing test any repo commits and
   runs in CI with `node` alone: Keep a Changelog categories + shape + semver ordering
   (RS-changelog), CHANGELOG ⟺ version-manifest lockstep (RS-lockstep), standard-readme
   structure with License last (RS-readme), contiguous numbered CONVENTIONS sections
@@ -99,10 +110,10 @@ from the first push: the standard the plugin installs is the standard it lives u
   RS-stable-docs cannot hold it) was deletable while CI stayed green. The new `license` check
   requires a root license file (LICENSE / LICENCE / COPYING families, `.md`/`.txt` accepted),
   requires it non-empty, fingerprints the text with the same heuristics `sense-state` uses, and
-  — when the text is a recognizable standard license — requires EVERY version manifest that
-  declares a `license` field (string form only; the deprecated npm object/array form reddens)
-  and the README's License section to name the same id, GNU `-only`/`-or-later` suffixes
-  accepted. What cannot be compared is a named skip, never an implied agreement: an
+  — when the text is a recognizable standard license — requires each JSON manifest it reads
+  (`.claude-plugin/plugin.json`, `package.json`) that declares a `license` field (string form
+  only; the deprecated npm object/array form reddens) and the README's License section to name
+  the same id, GNU `-only`/`-or-later` suffixes accepted. What cannot be compared is a named skip, never an implied agreement: an
   unrecognized text skips the whole agreement leg, a manifest with no license field skips the
   manifest leg. The fingerprint knows MIT-0 and refuses to guess MIT from the shared grant
   sentence alone — a text is recognized by what distinguishes it, or it is `unrecognized`.

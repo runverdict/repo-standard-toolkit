@@ -1,7 +1,7 @@
 ---
 name: scaffold
 description: Bootstrap or reconcile enterprise repo hygiene in the current repo — sense greenfield vs. mid-project, scaffold the missing meta docs (README / CHANGELOG / CONVENTIONS / CONTRIBUTING / CODE_OF_CONDUCT / SECURITY / LICENSE) from standards-grounded templates, bring drifted ones into compliance without clobbering prose, and install the committed dependency-free lint + CI gate so the standard polices itself on every push with or without Claude. Idempotent — safe to re-run on any repo at any maturity. Use on a fresh repo, on a repo whose front matter has drifted, or to adopt the standard mid-project.
-allowed-tools: Read Grep Glob AskUserQuestion Write(README.md) Write(CHANGELOG.md) Write(CONVENTIONS.md) Write(CONTRIBUTING.md) Write(CODE_OF_CONDUCT.md) Write(SECURITY.md) Write(LICENSE) Write(.repo-standard.json) Write(.github/workflows/*) Edit(README.md) Edit(CHANGELOG.md) Edit(CONVENTIONS.md) Edit(CONTRIBUTING.md) Edit(CODE_OF_CONDUCT.md) Edit(SECURITY.md) Edit(.repo-standard.json) Edit(package.json) Bash(ls *) Bash(mkdir -p acceptance*) Bash(mkdir -p .github/workflows*) Bash(cp *payload/*) Bash(git status*) Bash(git log *) Bash(git remote *) Bash(gh auth status*) Bash(gh api repos/*) Bash(node *harness/sense-state.mjs *) Bash(node *harness/fill-template.mjs *) Bash(node *harness/install-hook.mjs *) Bash(node acceptance/test-repo-standard.mjs*) Bash(node acceptance/test-*.mjs*) Bash(for t in acceptance/test-*.mjs*)
+allowed-tools: Read Grep Glob AskUserQuestion Write(README.md) Write(CHANGELOG.md) Write(CONVENTIONS.md) Write(CONTRIBUTING.md) Write(CODE_OF_CONDUCT.md) Write(SECURITY.md) Write(LICENSE) Write(.repo-standard.json) Write(.github/workflows/*) Edit(README.md) Edit(CHANGELOG.md) Edit(CONVENTIONS.md) Edit(CONTRIBUTING.md) Edit(CODE_OF_CONDUCT.md) Edit(SECURITY.md) Edit(.repo-standard.json) Edit(package.json) Edit(.claude-plugin/plugin.json) Bash(ls *) Bash(mkdir -p acceptance*) Bash(mkdir -p .github/workflows*) Bash(cp *payload/*) Bash(git status*) Bash(git log *) Bash(git remote *) Bash(gh auth status*) Bash(gh api repos/*) Bash(node *harness/sense-state.mjs *) Bash(node *harness/fill-template.mjs *) Bash(node *harness/install-hook.mjs *) Bash(node acceptance/test-repo-standard.mjs*) Bash(node acceptance/test-*.mjs*) Bash(for t in acceptance/test-*.mjs*)
 ---
 
 # Scaffold
@@ -102,7 +102,11 @@ and no AI hits the same gate.
    and never scaffold a root copy beside it: the lint's RS-shadow reddens on a doc duplicated
    across served locations, because GitHub silently serves the higher-precedence copy while the
    gate checks the other. A reported DUPLICATE is the operator's to resolve (which copy is
-   truth?) — ask, never delete on your own. Then replace every `TODO(scaffold)` comment with real prose grounded in the actual
+   truth?) — ask, never delete on your own. The templates cross-link the meta docs at
+   root-relative paths (README → CONTRIBUTING.md and CODE_OF_CONDUCT.md, CONTRIBUTING →
+   CONVENTIONS.md and LICENSE); when a governed doc lives at a non-root location, correct
+   those links in the filled output to the real path — a scaffolded link must resolve.
+   Then replace every `TODO(scaffold)` comment with real prose grounded in the actual
    repo — read the entry points, manifests, and code before writing Install/Usage/Background;
    SECURITY's GitHub-reporting bullet is added only when a real remote exists (its TODO says
    how), so a remote-less repo ships the email channel alone, never a fabricated link. Never

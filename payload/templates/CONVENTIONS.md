@@ -44,9 +44,10 @@ published specs, not invented here:
   reverse-chronological, valid semver, newest matching the version manifest. A pulled release
   keeps its section, tagged `[YANKED]` after the date.
 - **README → [standard-readme](https://github.com/RichardLitt/standard-readme).** Exactly one
-  H1; a short **bold tagline** immediately after it (never a blockquote); **Install**,
-  **Usage**, and **Contributing** sections; a **Caveats**/limitations section (a standard that
-  ships its limits); and the **License** section LAST.
+  H1; a short description immediately after it (never a blockquote); **Install**, **Usage**,
+  and **Contributing** sections; the **License** section LAST. Two house additions on top of
+  the spec: the short description is a **bold tagline**, and a **Caveats**/limitations section
+  is required (a standard that ships its limits).
 - **CONVENTIONS.** This file's numbered `## N.` sections are contiguous from §1 — no gaps, no
   duplicates.
 - **Counts are machine-verified, not trusted.** Any count claim declared in
@@ -57,9 +58,10 @@ published specs, not invented here:
 - **Stable meta files** — SECURITY, CONTRIBUTING, and CODE_OF_CONDUCT (the
   [Contributor Covenant](https://www.contributor-covenant.org/)) exist and open with an H1.
 - **LICENSE is lint-governed too.** A license file exists at the repo root; when its text is a
-  recognizable standard license, every manifest that declares a license field and the README's
-  License section must name the same id. What cannot be compared — an unrecognized text, a
-  manifest without the field — is a loud named skip, never a silent pass.
+  recognizable standard license, each JSON manifest the lint reads (the plugin manifest and
+  package.json) that declares a license field, and the README's License section, must name the
+  same id. What cannot be compared — an unrecognized text, no manifest license field — is a
+  loud named skip, never a silent pass.
 - **No shadowed meta files.** A governed doc exists in exactly one of `.github/`, the repo
   root, or `docs/`. For README and the community health files GitHub serves only the
   highest-precedence copy, and for every governed doc a second copy is drift the content

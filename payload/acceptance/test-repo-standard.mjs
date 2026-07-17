@@ -43,9 +43,10 @@
  *   RS-stable-docs   the stable meta files exist and open with an H1.
  *   RS-todos         no TODO(scaffold) marker survives in a governed doc.
  *   RS-license       a root license file exists, is non-empty, and — when its text is a
- *                    recognizable standard license — its id agrees with the version manifest's
- *                    license field and the README's License section (unrecognized text is a
- *                    loud named skip, never a silent pass).
+ *                    recognizable standard license — its id agrees with the license field of
+ *                    each JSON manifest present (.claude-plugin/plugin.json, package.json)
+ *                    and with the README's License section (unrecognized text is a loud named
+ *                    skip, never a silent pass).
  *   RS-placeholders  no unfilled {{PLACEHOLDER}} token survives in a governed doc (a
  *                    hand-copied template bypasses fill-template's refusal; this catches it).
  *   RS-shadow        no governed doc exists in more than one GitHub-served location

@@ -21,8 +21,8 @@
  *       sf-security-review-toolkit each shipped a marketplace.json claiming `runverdict-plugins`
  *       and listing only themselves, `marketplace add` of the second REPLACED the first and
  *       knocked its installed plugins to "failed to load". The catalog lives in
- *       runverdict/plugins, which lists every toolkit with a url source; this repo ships
- *       a plugin.json and stays out of the namespace business.
+ *       runverdict/plugins, which lists Verdict's published toolkits with github sources;
+ *       this repo ships a plugin.json and stays out of the namespace business.
  *   W8  every `gh …` command a skill documents is covered by a Bash grant in its
  *       allowed-tools — a documented command with no grant fails at runtime, mid-scaffold,
  *       in someone else's repo (the same binding W3 gives the harness engines).

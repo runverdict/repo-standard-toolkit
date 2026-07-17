@@ -26,8 +26,10 @@ check needs the agent at enforcement time, it is rejected or redesigned.
 - **`payload/` is the product.** Everything installed into target repos lives there:
   `payload/acceptance/test-repo-standard.mjs` (the generic lint, canonical copy),
   `payload/repo-standard.json` (the default scope config), `payload/workflows/repo-standard.yml`
-  (the CI gate), `payload/rulesets/repo-standard.json` (the branch ruleset that makes the gate
-  a REQUIRED check — shipped disabled; activating it is the operator's flip),
+  and `repo-standard-scoped.yml` (the CI gate — full-suite, plus the stopgap variant for repos
+  whose pre-existing tests are red), `payload/rulesets/repo-standard.json` (the branch ruleset
+  that makes the gate a REQUIRED check — shipped disabled; activating it is the operator's
+  flip), `payload/hooks/pre-push` (the optional local check, installed uncommitted),
   `payload/templates/` (the fill-in artifacts).
 - **Dogfood is byte-identical.** This repo's own `acceptance/test-repo-standard.mjs` is an
   installed copy of the payload lint; a standing sync test fails the build if the two differ.
@@ -37,7 +39,7 @@ check needs the agent at enforcement time, it is rejected or redesigned.
   keeps it that way.
 - **Templates are proven, not trusted.** A standing test fills every template with sample
   values and runs the shipped lint over the result — a template that scaffolds a
-  standard-violating repo cannot merge.
+  standard-violating repo reddens the build.
 - **The canon is hardcoded; config tunes scope.** The six Keep a Changelog categories,
   License-last, the voice ban — these are the standard and live in the lint. The per-repo
   `.repo-standard.json` selects which docs exist, which counts are machine-checked, and other
@@ -86,9 +88,10 @@ enforced by its own installed copy of `acceptance/test-repo-standard.mjs` (scope
   reverse-chronological, valid semver, the newest in lockstep with the version manifest. A
   pulled release keeps its section, tagged `[YANKED]` after the date.
 - **README → [standard-readme](https://github.com/RichardLitt/standard-readme).** Exactly one
-  H1; a short **bold tagline** immediately after it (never a blockquote); **Install**,
-  **Usage**, and **Contributing** sections; a **Caveats**/limitations section (a standard that
-  ships its limits); the **License** section LAST.
+  H1; a short description immediately after it (never a blockquote); **Install**, **Usage**,
+  and **Contributing** sections; the **License** section LAST. Two house additions on top of
+  the spec: the short description is a **bold tagline**, and a **Caveats**/limitations section
+  is required (a standard that ships its limits).
 - **CONVENTIONS.** The numbered `## N.` sections are contiguous from §1 — no gaps, no
   duplicates.
 - **Counts are machine-verified, not trusted.** Every count declared in `.repo-standard.json`
@@ -99,9 +102,10 @@ enforced by its own installed copy of `acceptance/test-repo-standard.mjs` (scope
   [Contributor Covenant](https://www.contributor-covenant.org/), currently 3.0) exist and open
   with an H1.
 - **LICENSE is lint-governed too.** A license file exists at the repo root; when its text is a
-  recognizable standard license, every manifest that declares a `license` field and the
-  README's License section must name the same id. What cannot be compared — an unrecognized
-  text, a manifest without the field — is a loud named skip, never a silent pass.
+  recognizable standard license, each JSON manifest the lint reads (the plugin manifest and
+  `package.json`) that declares a `license` field, and the README's License section, must name
+  the same id. What cannot be compared — an unrecognized text, no manifest license field — is
+  a loud named skip, never a silent pass.
 - **No shadowed meta files.** A governed doc exists in exactly one of `.github/`, the repo
   root, or `docs/`. For README and the community health files GitHub serves only the
   highest-precedence copy, and for every governed doc a second copy is drift the content

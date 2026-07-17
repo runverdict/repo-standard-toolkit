@@ -35,8 +35,8 @@ What the suite locks, by family:
   `harness/sense-state.mjs` (classification, plan, payload-match detection) against fixture
   trees.
 - **Skill and plugin wiring** — SKILL.md frontmatter and anatomy, engine references that exist
-  and are granted, plugin/marketplace manifest consistency, CHANGELOG ⟺ plugin.json version
-  lockstep.
+  and are granted, the no-marketplace-of-its-own rule (the catalog has exactly one home),
+  CHANGELOG ⟺ plugin.json ⟺ payload-lint version lockstep.
 - **This repo's own hygiene** — the installed `test-repo-standard.mjs` copy governs this repo's
   front matter under `.repo-standard.json`, and supply-chain posture (no `package.json`,
   stdlib-only imports, read-only CI token) has its own guard.
