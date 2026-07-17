@@ -155,10 +155,12 @@ from the first push: the standard the plugin installs is the standard it lives u
   the SAME SET, both directions — a phantom context would wedge every merge once active — and
   rejects job-level display names, which would change the check context out from under the
   ruleset.
-- The scaffold skill offers the ruleset (new step 9, silence = no) once the suite is green:
-  applied via `gh api` when authenticated (idempotent — an existing `repo-standard` ruleset is
-  never duplicated), else the manual Settings path is printed; the recap states the repo's
-  blocking status in plain words. The pre-push hook, install output, and README no longer say
+- The scaffold skill offers the ruleset (new step 9, silence = no) once the suite is green —
+  and probes first with a read-only ruleset GET, so the question only reaches operators whose
+  plan can take it: GitHub gates rulesets on free-plan private repos, and an operator there
+  gets the honest blocking-status line in the recap instead of a doomed offer. When the probe
+  clears, the apply is idempotent (an existing `repo-standard` ruleset is never duplicated);
+  without `gh`, the manual Settings path is printed. The pre-push hook, install output, and README no longer say
   "CI gates this push" — a workflow run without a required status check blocks nothing, and
   the honest phrasing now points at the ruleset that makes it block.
 - A new `test-gate-posture` standing test pins all of the above.

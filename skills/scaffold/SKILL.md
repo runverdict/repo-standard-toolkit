@@ -151,18 +151,25 @@ and no AI hits the same gate.
 9. **Offer the required-check ruleset — the piece that makes a red run BLOCK instead of just
    glow.** A workflow that runs on every push blocks nothing by itself: on GitHub only a
    REQUIRED status check stops a merge, and that requirement lives in a branch ruleset, not in
-   any committed file. Once the suite is green and the repo has a GitHub remote, ask
-   (AskUserQuestion) whether to apply
-   `${CLAUDE_PLUGIN_ROOT}/payload/rulesets/repo-standard.json` — silence is a NO, like the
-   hook. On a yes: check `gh auth status`; if authenticated, first list
-   `gh api repos/{owner}/{repo}/rulesets` and stand down with a note when one named
-   `repo-standard` already exists (a re-run must not stack duplicates), else apply it with
-   `gh api repos/{owner}/{repo}/rulesets --method POST --input ${CLAUDE_PLUGIN_ROOT}/payload/rulesets/repo-standard.json`.
-   Without `gh`, or on an API refusal (403/404: no admin rights, or a plan without rulesets —
-   private repos below Pro have none; 422: a field the plan does not support — each is
-   information, never something to retry blindly), print the manual path instead: Settings →
-   Rules → Rulesets → New branch ruleset → require the `test` status check on the default
-   branch. Describe it honestly: the payload ships with `"enforcement": "disabled"` — the
+   any committed file. Once the suite is green, the repo has a GitHub remote, and
+   `gh auth status` is green, PROBE before asking — never offer what the plan cannot take.
+   Run the read-only `gh api repos/{owner}/{repo}/rulesets` and branch on what comes back:
+   - **403 with an upgrade message** (rulesets are unavailable on free-plan PRIVATE repos):
+     do not ask the question at all. State it in the recap instead: rulesets are not
+     available on this plan for a private repo, a red run blocks nothing, and the offer
+     stands once the repo goes public or the plan changes.
+   - **200 with a ruleset named `repo-standard` already present**: stand down with a note —
+     a re-run must not stack duplicates.
+   - **200 otherwise**: ask (AskUserQuestion) whether to apply
+     `${CLAUDE_PLUGIN_ROOT}/payload/rulesets/repo-standard.json` — silence is a NO, like the
+     hook. On a yes, apply it with
+     `gh api repos/{owner}/{repo}/rulesets --method POST --input ${CLAUDE_PLUGIN_ROOT}/payload/rulesets/repo-standard.json`.
+   Without `gh` (or unauthenticated), skip the probe and print the manual path instead:
+   Settings → Rules → Rulesets → New branch ruleset → require the `test` status check on the
+   default branch. Any other API refusal (403 without an upgrade hint: no admin rights;
+   422: a field the plan rejects) is information, never something to retry blindly — report
+   it and fall back to the manual path. Describe the offer honestly: the payload ships with
+   `"enforcement": "disabled"` — the
    ruleset lands fully configured but INERT, on every GitHub plan (`evaluate`, the dry-run
    mode, is Enterprise-only, which is exactly why it is not the default) — and turning it on
    is the operator's one deliberate act: Settings → Rules → Rulesets → repo-standard →
