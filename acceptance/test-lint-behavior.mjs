@@ -333,6 +333,9 @@ expect('LB-M-placeholders-license an unfilled {{YEAR}} in the LICENSE file redde
   '✗ RS-placeholders', '{{YEAR}}')
 expect('LB-S-placeholders-named NAMING a token in backticks stays green (a mention is not an unfilled scaffold)',
   (f) => { f['README.md'] = f['README.md'].replace('Clone it.', 'Clone it. The scaffolder fills every `{{PROJECT_NAME}}` token.') }, 0)
+expect('LB-M-placeholders-fence-quoted a QUOTED token inside a fence still reddens (in code, quotes are syntax, not mentions)',
+  (f) => { f['README.md'] = f['README.md'].replace('Clone it.', 'Clone it.\n\n```json\n{ "name": "{{PROJECT_NAME}}" }\n```') }, 1,
+  '✗ RS-placeholders', '{{PROJECT_NAME}}')
 expect('LB-M-shadow a .github/ copy of a governed stable doc reddens RS-shadow (GitHub would serve the ungoverned copy)',
   (f) => { f['.github/CONTRIBUTING.md'] = '# Contributing\n\nStale shadow.\n' }, 1,
   '✗ RS-shadow', '.github/CONTRIBUTING.md shadows CONTRIBUTING.md')

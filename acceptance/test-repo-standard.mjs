@@ -662,12 +662,17 @@ if (!disabled.license && licenseId && licenseId !== 'unrecognized' && !manifestD
 gate('placeholders', 'RS-placeholders no unfilled {{PLACEHOLDER}} token survives in a governed doc', () => {
   for (const doc of new Set([...metaDocs, ...stableDocs, ...(licenseFile ? [licenseFile] : [])])) {
     if (!exists(doc)) continue
+    let inFence = false
     read(doc).split('\n').forEach((line, i) => {
       // deliberately NO fence exemption: template placeholders live inside fenced install/usage
       // examples ({{INSTALL_COMMAND}}), which is exactly where a hand-copied template escapes
-      // fill-template's own refusal. Inline-code and quoted MENTIONS stay exempt — a doc about
-      // the template system may name a token without carrying an unfilled scaffold.
-      const bare = line.replace(/"[^"]*"|`[^`]*`/g, '').replace(/(?<![A-Za-z0-9])'[^']*'(?![A-Za-z0-9])/g, '')
+      // fill-template's own refusal. Inline-code and quoted MENTIONS stay exempt in PROSE only
+      // — inside a fence a quote is code syntax (a JSON/YAML example quotes its every value),
+      // so the fence is scanned raw, delimiter lines included.
+      const isDelim = FENCE_LINE.test(line)
+      if (isDelim) inFence = !inFence
+      const bare = (inFence || isDelim) ? line
+        : line.replace(/"[^"]*"|`[^`]*`/g, '').replace(/(?<![A-Za-z0-9])'[^']*'(?![A-Za-z0-9])/g, '')
       const m = bare.match(/\{\{[A-Z0-9_]+\}\}/)
       assert.ok(!m, `${doc}:${i + 1} carries an unfilled template placeholder ${m?.[0]} — a hand-copied template bypassed the fill engine; fill the value or delete the line: ${line.trim().slice(0, 70)}`)
     })

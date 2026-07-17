@@ -103,8 +103,9 @@ from the first push: the standard the plugin installs is the standard it lives u
 - `fill-template` refuses an unfilled placeholder, but a template copied by hand never meets
   the engine. The new `placeholders` check reddens on any surviving `{{PLACEHOLDER}}` token in
   a governed doc or the license file — fenced code blocks deliberately included, because
-  fenced install/usage examples are exactly where template placeholders live; inline-code and
-  quoted mentions stay exempt.
+  fenced install/usage examples are exactly where template placeholders live. Inline-code and
+  quoted mentions stay exempt in prose only; inside a fence a quote is code syntax (a JSON
+  example quotes its every value), so fences are scanned raw.
 
 **RS-shadow — one governed copy per doc, and sensing that knows where docs live**
 - GitHub serves README and every community health file with precedence `.github/` > root >
