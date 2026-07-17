@@ -60,8 +60,9 @@ published specs, not invented here:
   recognizable standard license, the version manifest's license field and the README's License
   section must name the same id — an unrecognized text is a loud named skip, never a silent
   pass.
-- **No unfinished scaffolds.** No `TODO(scaffold)` marker survives in a governed doc — the lint
-  reddens on any left behind, so a half-written scaffold cannot pass CI while looking done.
+- **No unfinished scaffolds.** No `TODO(scaffold)` marker and no unfilled double-braced
+  template token survives in a governed doc — the lint reddens on either, so a half-written or
+  hand-copied scaffold cannot pass CI while looking done.
 
 The lint is installed and updated by
 [`repo-standard-toolkit`](https://github.com/runverdict/repo-standard-toolkit); this repo owns

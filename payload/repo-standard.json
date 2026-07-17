@@ -40,6 +40,6 @@
   "//stableDocs": "Rarely-changing meta files that must exist and open with an H1. Replacing this list is a visible weakening — think before shrinking it.",
   "stableDocs": ["SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md"],
 
-  "//checks": "The only off switch, per check id, and it is loud: { \"<id>\": { \"enabled\": false, \"why\": \"<reason printed on every run>\" } }. Ids: changelog, lockstep, readme, conventions, manifest, voice, counts, reflexivity, stable-docs, todos, license.",
+  "//checks": "The only off switch, per check id, and it is loud: { \"<id>\": { \"enabled\": false, \"why\": \"<reason printed on every run>\" } }. Ids: changelog, lockstep, readme, conventions, manifest, voice, counts, reflexivity, stable-docs, todos, license, placeholders.",
   "checks": {}
 }

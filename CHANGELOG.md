@@ -96,6 +96,13 @@ from the first push: the standard the plugin installs is the standard it lives u
   README's License section to name the same id, GNU `-only`/`-or-later` suffixes accepted. An
   unrecognized text passes existence and skips agreement as a named, printed skip.
 
+**RS-placeholders — hand-copied templates cannot pass half-filled**
+- `fill-template` refuses an unfilled placeholder, but a template copied by hand never meets
+  the engine. The new `placeholders` check reddens on any surviving `{{PLACEHOLDER}}` token in
+  a governed doc or the license file — fenced code blocks deliberately included, because
+  fenced install/usage examples are exactly where template placeholders live; inline-code and
+  quoted mentions stay exempt.
+
 **Version-directed lint upgrades**
 - The payload lint now carries a machine-readable `REPO_STANDARD_LINT_VERSION` constant
   (printed on every run, locked to the plugin version by a standing test). When an installed

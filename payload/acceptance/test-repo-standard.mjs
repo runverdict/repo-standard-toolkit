@@ -46,6 +46,8 @@
  *                    recognizable standard license — its id agrees with the version manifest's
  *                    license field and the README's License section (unrecognized text is a
  *                    loud named skip, never a silent pass).
+ *   RS-placeholders  no unfilled {{PLACEHOLDER}} token survives in a governed doc (a
+ *                    hand-copied template bypasses fill-template's refusal; this catches it).
  *
  * Freshness is never age-gated: this checks STRUCTURE + CONSISTENCY + machine-verifiable facts,
  * not "is the prose old". Dependency-free: `node acceptance/test-repo-standard.mjs`.
@@ -78,7 +80,7 @@ const README_CANON_DOCS_ONLY = ['Contributing']
 const README_ORDER = ['Security', 'Background', 'Install', 'Usage', 'API', 'Maintainers', 'Thanks', 'Contributing', 'License']
 const BANNED_VOICE = ['simply', 'seamless', 'effortless', 'blazing', 'world-class', 'cutting-edge', 'revolutionary', 'game-chang', 'turnkey', 'best-in-class']
 const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
-const CHECK_IDS = ['changelog', 'lockstep', 'readme', 'conventions', 'manifest', 'voice', 'counts', 'reflexivity', 'stable-docs', 'todos', 'license']
+const CHECK_IDS = ['changelog', 'lockstep', 'readme', 'conventions', 'manifest', 'voice', 'counts', 'reflexivity', 'stable-docs', 'todos', 'license', 'placeholders']
 
 // ─────────────────────────────────────────────────────────────────────────── runner
 let pass = 0, fail = 0, skip = 0
@@ -637,6 +639,22 @@ gate('license', `RS-license ${licenseFile ?? 'LICENSE'} exists and its id agrees
 if (!disabled.license && licenseId === 'unrecognized') {
   skipCheck('RS-license (id agreement)', `${licenseFile} is not a recognized standard license text — LICENSE ⟺ manifest ⟺ README agreement cannot be checked; existence and non-emptiness were`)
 }
+
+// ─────────────────────────────────────────────────────────────────── RS-placeholders
+gate('placeholders', 'RS-placeholders no unfilled {{PLACEHOLDER}} token survives in a governed doc', () => {
+  for (const doc of new Set([...metaDocs, ...stableDocs, ...(licenseFile ? [licenseFile] : [])])) {
+    if (!exists(doc)) continue
+    read(doc).split('\n').forEach((line, i) => {
+      // deliberately NO fence exemption: template placeholders live inside fenced install/usage
+      // examples ({{INSTALL_COMMAND}}), which is exactly where a hand-copied template escapes
+      // fill-template's own refusal. Inline-code and quoted MENTIONS stay exempt — a doc about
+      // the template system may name a token without carrying an unfilled scaffold.
+      const bare = line.replace(/"[^"]*"|`[^`]*`/g, '').replace(/(?<![A-Za-z0-9])'[^']*'(?![A-Za-z0-9])/g, '')
+      const m = bare.match(/\{\{[A-Z0-9_]+\}\}/)
+      assert.ok(!m, `${doc}:${i + 1} carries an unfilled template placeholder ${m?.[0]} — a hand-copied template bypassed the fill engine; fill the value or delete the line: ${line.trim().slice(0, 70)}`)
+    })
+  }
+})
 
 console.log(`\n${pass} passed, ${fail} failed${skip ? `, ${skip} skipped (each named above — a skip is visible, never silent)` : ''}`)
 process.exit(fail ? 1 : 0)

@@ -304,6 +304,17 @@ expect('LB-S-license-expression an SPDX expression containing the detected id st
   (f) => { f['package.json'] = '{ "name": "fixture", "version": "1.2.3", "license": "(MIT OR Apache-2.0)" }\n' }, 0)
 expect('LB-S-license-copying the GPL convention (COPYING) counts as the license file',
   (f) => { f['COPYING'] = f['LICENSE']; f['LICENSE'] = null }, 0)
+expect('LB-M-placeholders an unfilled {{PLACEHOLDER}} token in prose reddens RS-placeholders',
+  (f) => { f['README.md'] = f['README.md'].replace('Clone it.', 'Clone {{PROJECT_NAME}} first.') }, 1,
+  '✗ RS-placeholders', 'unfilled template placeholder {{PROJECT_NAME}}')
+expect('LB-M-placeholders-fence a placeholder inside a FENCED block still reddens (fences are where hand-copied templates hide them)',
+  (f) => { f['README.md'] = f['README.md'].replace('Clone it.', 'Clone it.\n\n```bash\n{{INSTALL_COMMAND}}\n```') }, 1,
+  '✗ RS-placeholders', '{{INSTALL_COMMAND}}')
+expect('LB-M-placeholders-license an unfilled {{YEAR}} in the LICENSE file reddens RS-placeholders',
+  (f) => { f['LICENSE'] = f['LICENSE'].replace('Copyright (c) 2026', 'Copyright (c) {{YEAR}}') }, 1,
+  '✗ RS-placeholders', '{{YEAR}}')
+expect('LB-S-placeholders-named NAMING a token in backticks stays green (a mention is not an unfilled scaffold)',
+  (f) => { f['README.md'] = f['README.md'].replace('Clone it.', 'Clone it. The scaffolder fills every `{{PROJECT_NAME}}` token.') }, 0)
 
 // ── the hardenings from the adversarial pass, each locked so the bypass can never reopen ──
 expect('LB-M-voice-spaced a hyphenated ban written with a space ("world class") still reddens RS-voice',

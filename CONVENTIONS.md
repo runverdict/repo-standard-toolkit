@@ -103,3 +103,6 @@ enforced by its own installed copy of `acceptance/test-repo-standard.mjs` (scope
 - **No unfinished scaffolds.** No `TODO(scaffold)` marker survives in a governed doc — the lint
   reddens on any left behind, so a half-written scaffold cannot pass CI while looking done.
   Naming the marker in backticks (as this line does) is a mention, not an unfinished scaffold.
+  The same rule holds for unfilled `{{PLACEHOLDER}}` tokens — a hand-copied template that
+  bypassed the fill engine reddens the build, fenced code blocks included (that is exactly
+  where template placeholders live).
