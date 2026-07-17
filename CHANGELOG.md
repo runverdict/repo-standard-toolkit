@@ -142,6 +142,12 @@ from the first push: the standard the plugin installs is the standard it lives u
   up-to-date checks). It ships in `evaluate` (dry-run) enforcement: flipping to `active` is
   the operator's deliberate act. A standing test locks the required-check context to the job
   id the payload workflows actually define.
+- The scaffold skill offers the ruleset (new step 9, silence = no) once the suite is green:
+  applied via `gh api` when authenticated (idempotent — an existing `repo-standard` ruleset is
+  never duplicated), else the manual Settings path is printed; the recap states the repo's
+  blocking status in plain words. The pre-push hook, install output, and README no longer say
+  "CI gates this push" — a workflow run without a required status check blocks nothing, and
+  the honest phrasing now points at the ruleset that makes it block.
 - A new `test-gate-posture` standing test pins all of the above.
 
 ### Changed

@@ -86,7 +86,12 @@ Into the target repo, all committed, all dependency-free:
   `TODO(scaffold)` marker resolved against the real repo before the gate lets them pass.
 
 Optionally, if you say yes when asked: a `pre-push` hook in `.git/hooks/` that runs the lint
-locally before each push. See [The optional pre-push check](#the-optional-pre-push-check).
+locally before each push (see [The optional pre-push check](#the-optional-pre-push-check)),
+and a GitHub branch ruleset (`payload/rulesets/repo-standard.json`, applied via `gh api`) that
+makes the `test` check REQUIRED on the default branch — the piece that turns a red run into a
+blocked merge instead of a red badge. The ruleset ships in `evaluate` (dry-run) enforcement;
+you flip it to `active` after watching it. Until a repo requires the check, a red CI run
+blocks nothing — the skill and the recap say so rather than implying otherwise.
 
 ## The standards it embodies
 
@@ -167,7 +172,8 @@ rather than in CI a minute later.
 **It is a convenience, not a gate**, and the design says so out loud: it is per-clone,
 uncommitted, skipped by `git push --no-verify`, and absent for anyone who clones fresh. That is
 exactly why it is installed *uncommitted* — committing it would imply it is part of the
-standard, and a hook can never be. The gate is the same lint, run by CI, which no one can skip.
+standard, and a hook can never be. The gate is the same lint, run by CI — and once the repo
+requires that check via the branch ruleset, nobody merges past a red run.
 
 The engine refuses rather than surprising you: it never clobbers a pre-push hook it did not
 write, it reports instead of writing into `.git/hooks` when `core.hooksPath` points elsewhere

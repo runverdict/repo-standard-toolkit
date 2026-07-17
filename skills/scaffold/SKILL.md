@@ -1,7 +1,7 @@
 ---
 name: scaffold
 description: Bootstrap or reconcile enterprise repo hygiene in the current repo — sense greenfield vs. mid-project, scaffold the missing meta docs (README / CHANGELOG / CONVENTIONS / CONTRIBUTING / CODE_OF_CONDUCT / SECURITY / LICENSE) from standards-grounded templates, bring drifted ones into compliance without clobbering prose, and install the committed dependency-free lint + CI gate so the standard polices itself on every push with or without Claude. Idempotent — safe to re-run on any repo at any maturity. Use on a fresh repo, on a repo whose front matter has drifted, or to adopt the standard mid-project.
-allowed-tools: Read Grep Glob AskUserQuestion Write(README.md) Write(CHANGELOG.md) Write(CONVENTIONS.md) Write(CONTRIBUTING.md) Write(CODE_OF_CONDUCT.md) Write(SECURITY.md) Write(LICENSE) Write(.repo-standard.json) Write(.github/workflows/*) Edit(README.md) Edit(CHANGELOG.md) Edit(CONVENTIONS.md) Edit(CONTRIBUTING.md) Edit(CODE_OF_CONDUCT.md) Edit(SECURITY.md) Edit(.repo-standard.json) Edit(package.json) Bash(ls *) Bash(mkdir -p acceptance*) Bash(mkdir -p .github/workflows*) Bash(cp *payload/*) Bash(git status*) Bash(git log *) Bash(git remote *) Bash(node *harness/sense-state.mjs *) Bash(node *harness/fill-template.mjs *) Bash(node *harness/install-hook.mjs *) Bash(node acceptance/test-repo-standard.mjs*) Bash(node acceptance/test-*.mjs*) Bash(for t in acceptance/test-*.mjs*)
+allowed-tools: Read Grep Glob AskUserQuestion Write(README.md) Write(CHANGELOG.md) Write(CONVENTIONS.md) Write(CONTRIBUTING.md) Write(CODE_OF_CONDUCT.md) Write(SECURITY.md) Write(LICENSE) Write(.repo-standard.json) Write(.github/workflows/*) Edit(README.md) Edit(CHANGELOG.md) Edit(CONVENTIONS.md) Edit(CONTRIBUTING.md) Edit(CODE_OF_CONDUCT.md) Edit(SECURITY.md) Edit(.repo-standard.json) Edit(package.json) Bash(ls *) Bash(mkdir -p acceptance*) Bash(mkdir -p .github/workflows*) Bash(cp *payload/*) Bash(git status*) Bash(git log *) Bash(git remote *) Bash(gh auth status*) Bash(gh api repos/*) Bash(node *harness/sense-state.mjs *) Bash(node *harness/fill-template.mjs *) Bash(node *harness/install-hook.mjs *) Bash(node acceptance/test-repo-standard.mjs*) Bash(node acceptance/test-*.mjs*) Bash(for t in acceptance/test-*.mjs*)
 ---
 
 # Scaffold
@@ -139,7 +139,26 @@ and no AI hits the same gate.
    when asked, use a conventional commit
    (`chore(repo-standard): scaffold hygiene standard + committed enforcement`).
 
-9. **Offer the local pre-push check — do not assume it.** Once the suite is green, ask
+9. **Offer the required-check ruleset — the piece that makes a red run BLOCK instead of just
+   glow.** A workflow that runs on every push blocks nothing by itself: on GitHub only a
+   REQUIRED status check stops a merge, and that requirement lives in a branch ruleset, not in
+   any committed file. Once the suite is green and the repo has a GitHub remote, ask
+   (AskUserQuestion) whether to apply
+   `${CLAUDE_PLUGIN_ROOT}/payload/rulesets/repo-standard.json` — silence is a NO, like the
+   hook. On a yes: check `gh auth status`; if authenticated, first list
+   `gh api repos/{owner}/{repo}/rulesets` and stand down with a note when one named
+   `repo-standard` already exists (a re-run must not stack duplicates), else apply it with
+   `gh api repos/{owner}/{repo}/rulesets --method POST --input ${CLAUDE_PLUGIN_ROOT}/payload/rulesets/repo-standard.json`.
+   Without `gh`, or on an API refusal (403/404 means no admin rights or a plan without
+   rulesets on private repos — information, never something to retry blindly), print the
+   manual path instead: Settings → Rules → Rulesets → New branch ruleset → require the `test`
+   status check on the default branch. Describe it honestly: the payload ships with
+   `"enforcement": "evaluate"`, a dry run that only LOGS what would have been blocked
+   (Settings → Rules → Insights), and flipping it to `active` is the operator's deliberate
+   act after watching a few pushes. Until the ruleset exists AND is active, a red CI run
+   blocks nothing — whatever state this step ends in, the recap says so in those words.
+
+10. **Offer the local pre-push check — do not assume it.** Once the suite is green, ask
    (AskUserQuestion) whether the operator wants the optional pre-push hygiene check, and install
    it only on a yes:
    `node ${CLAUDE_PLUGIN_ROOT}/harness/install-hook.mjs --target .`
@@ -164,7 +183,9 @@ Report the lint's verdict with skips AS skips — "N passed, 1 skipped (RS-locks
 manifest)", with N being whatever the lint itself printed — never folded into a pass count, and
 never "all checks pass" when anything was skipped or disabled: a skip the lint prints loudly
 must stay loud in the recap, or the recap inflates exactly the claim this toolkit exists to
-police.
+police. State the blocking status in plain words — "the check is required and active", "the
+ruleset is in evaluate (dry-run): a red run logs but does not block", or "no ruleset: a red run
+turns the badge red and blocks nothing" — never imply the gate blocks when it only reports.
 State plainly that the standard is now enforced by the committed lint in CI, not by this plugin
 — removing the plugin changes nothing about enforcement. If the pre-push hook was installed, say
 where it lives, that it is local-only and uncommitted (a teammate who wants it re-runs this
