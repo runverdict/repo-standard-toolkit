@@ -12,6 +12,8 @@ keeps its section, tagged `[YANKED]` after the date.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-17
+
 ### Changed
 
 - The README template now carries a conditional CI-badge TODO: when the target repo has a
