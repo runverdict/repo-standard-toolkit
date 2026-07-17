@@ -85,3 +85,11 @@ tag is cut.
 
 **This repo governs itself** — `.repo-standard.json` + the installed lint copy + the CI gate,
 from the first push: the standard the plugin installs is the standard it lives under.
+
+### Fixed
+
+- `payload/hooks/pre-push` captured `$?` after an `if` statement, so the exit-2 branch was dead
+  code (POSIX: a failed `if` with no `else` exits 0) and a broken `.repo-standard.json` was
+  misdiagnosed as doc drift. The hook now runs the lint bare and captures the status on the next
+  line; both diagnosis branches are fixture-proven — a broken config must print "fix the config,
+  not the docs" and must not print the drift line.

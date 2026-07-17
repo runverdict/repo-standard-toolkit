@@ -23,11 +23,13 @@ if ! command -v node > /dev/null 2>&1; then
   exit 0
 fi
 
-if node "$LINT"; then
-  exit 0
-fi
-
+# POSIX quirk: `if node "$LINT"` followed by `status=$?` captures the IF statement's status —
+# which is 0 whenever a failed condition has no else — never node's. Only a bare command with
+# the capture on the very next line sees the real exit code, and the 2-vs-1 branch below is the
+# whole point of this hook's diagnosis.
+node "$LINT"
 status=$?
+[ "$status" -eq 0 ] && exit 0
 echo ""
 if [ "$status" -eq 2 ]; then
   echo "repo-standard: .repo-standard.json is broken (exit 2) — fix the config, not the docs."

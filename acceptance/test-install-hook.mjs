@@ -182,16 +182,21 @@ try {
     const r = runHook(d)
     assert.equal(r.code, 1, 'drift must block the push')
     assert.ok(r.out.includes('RS-changelog'), 'the lint failure itself is shown')
+    assert.ok(r.out.includes('front matter drifted'), `exit 1 must get the drift diagnosis, not the config one\n${r.out}`)
     assert.ok(r.out.includes('--no-verify'), 'the escape hatch is offered')
     assert.ok(r.out.includes('CI'), 'it says CI is the real gate')
   })
-  check('IH5 the hook: a broken config -> exit 1 pointing at the config, not the docs', () => {
+  check('IH5 the hook: a broken config -> exit 1 with the hook\'s OWN exit-2 diagnosis, not the drift one', () => {
     const d = governed(join(tmp, 'ih5-cfg'))
     run(['--target', d], tmp)
     writeFileSync(join(d, '.repo-standard.json'), '{ "version": 1, "bogusKey": true }')
     const r = runHook(d)
     assert.equal(r.code, 1, 'a broken config blocks the push')
-    assert.ok(r.out.includes('config'), 'it names the config as the thing to fix')
+    // the needle must be the HOOK's diagnosis line, not merely 'config' (the lint's own output
+    // contains that word, which is how the hook's dead exit-2 branch — an `if node`/`$?` POSIX
+    // capture bug — stayed green until it was found by audit, not by this suite).
+    assert.ok(r.out.includes('fix the config, not the docs'), `the hook must print its exit-2 diagnosis\n${r.out}`)
+    assert.ok(!r.out.includes('front matter drifted'), `the drift diagnosis must not fire on a config error\n${r.out}`)
   })
   check('IH5 the hook: no lint present -> exit 0 (a no-op, never a mystery block)', () => {
     const d = governed(join(tmp, 'ih5-nolint'))
