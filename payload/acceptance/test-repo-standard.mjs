@@ -69,7 +69,7 @@ const CONFIG_PATH = join(ROOT, '.repo-standard.json')
 // (payload older: a stale plugin must never silently replace a newer committed lint), or
 // local-edit (same version, different bytes). An acceptance test locks this constant to the
 // plugin manifest version; keep the line's exact shape — the parser matches it literally.
-const REPO_STANDARD_LINT_VERSION = '0.1.0'
+const REPO_STANDARD_LINT_VERSION = '0.2.0'
 
 // ───────────────────────────────────────────────────────────────── the hardcoded canon
 const CHANGELOG_CATEGORIES = ['Added', 'Changed', 'Deprecated', 'Removed', 'Fixed', 'Security']

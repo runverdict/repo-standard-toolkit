@@ -6,12 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Maintenance rule: every user-facing change lands an entry under `[Unreleased]` in the matching
 category. Cutting a tag renames `[Unreleased]` to the version + date, bumps
-`.claude-plugin/plugin.json` in the same commit, and opens a fresh `[Unreleased]`.
-**Pre-first-release there are no dated version sections** — per Keep a Changelog, version
-headings correspond to real tagged releases, so all pre-release work stays here until the first
-tag is cut.
+`.claude-plugin/plugin.json` and the payload lint's `REPO_STANDARD_LINT_VERSION` in the same
+commit (a standing test locks the pair), and opens a fresh `[Unreleased]`. A pulled release
+keeps its section, tagged `[YANKED]` after the date.
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-07-17
 
 ### Added
 

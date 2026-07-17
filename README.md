@@ -6,10 +6,11 @@ CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, LICENSE, the CI gate) from published st
 installs a committed linter so the standard polices itself on every push — with or without
 Claude.
 
-> **Status: built, pre-first-release.** The plugin version is `0.1.0`; the first tag is cut
-> after field runs against real repos. Everything below describes what exists and is
-> test-guarded in this tree — 11 standing tests, zero npm dependencies, and the repo governs
-> itself with the exact lint it installs elsewhere.
+> **Status: released.** Versions and history live in the [CHANGELOG](CHANGELOG.md); the first
+> tag (0.2.0) was cut after validated fixture runs and a live-repo drill — gate green on push,
+> and an active ruleset shown blocking a red PR, an admin merge, and a spoofed status.
+> Everything below is test-guarded in this tree — 11 standing tests, zero npm dependencies,
+> and the repo governs itself with the exact lint it installs elsewhere.
 
 ## Table of Contents
 
