@@ -42,6 +42,10 @@
  *   RS-reflexivity   the CONVENTIONS doc documents the enforced vocabulary (lint ⟺ spec).
  *   RS-stable-docs   the stable meta files exist and open with an H1.
  *   RS-todos         no TODO(scaffold) marker survives in a governed doc.
+ *   RS-license       a root license file exists, is non-empty, and — when its text is a
+ *                    recognizable standard license — its id agrees with the version manifest's
+ *                    license field and the README's License section (unrecognized text is a
+ *                    loud named skip, never a silent pass).
  *
  * Freshness is never age-gated: this checks STRUCTURE + CONSISTENCY + machine-verifiable facts,
  * not "is the prose old". Dependency-free: `node acceptance/test-repo-standard.mjs`.
@@ -74,7 +78,7 @@ const README_CANON_DOCS_ONLY = ['Contributing']
 const README_ORDER = ['Security', 'Background', 'Install', 'Usage', 'API', 'Maintainers', 'Thanks', 'Contributing', 'License']
 const BANNED_VOICE = ['simply', 'seamless', 'effortless', 'blazing', 'world-class', 'cutting-edge', 'revolutionary', 'game-chang', 'turnkey', 'best-in-class']
 const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
-const CHECK_IDS = ['changelog', 'lockstep', 'readme', 'conventions', 'manifest', 'voice', 'counts', 'reflexivity', 'stable-docs', 'todos']
+const CHECK_IDS = ['changelog', 'lockstep', 'readme', 'conventions', 'manifest', 'voice', 'counts', 'reflexivity', 'stable-docs', 'todos', 'license']
 
 // ─────────────────────────────────────────────────────────────────────────── runner
 let pass = 0, fail = 0, skip = 0
@@ -568,6 +572,71 @@ gate('todos', 'RS-todos no TODO(scaffold) marker survives in a governed doc', ()
     })
   }
 })
+
+// ──────────────────────────────────────────────────────────────────────── RS-license
+// GitHub cannot supply a LICENSE org-wide — every repo carries its own — yet the scaffolded
+// set's one non-markdown file is the one RS-stable-docs cannot govern (a license text has no
+// H1). This closes that hole: the file must exist, and when its text is a recognizable
+// standard license, the version manifest's license field and the README's License section must
+// name the same id — the declared-vs-discovered divergence license scanners flag, caught by
+// the committed gate instead of an audit.
+const LICENSE_CANDIDATES = ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENCE', 'LICENCE.md', 'LICENCE.txt', 'COPYING', 'COPYING.md', 'COPYING.txt', 'UNLICENSE']
+const licenseFile = LICENSE_CANDIDATES.find((f) => exists(f)) ?? null
+// twin of harness/sense-state.mjs's licenseFromFile chain — self-contained because a target
+// repo receives ONLY this file; a change to either copy belongs in both. Each arm keys on what
+// DISTINGUISHES its license (the BSD family shares one preamble verbatim; MIT's grant sentence
+// also appears in other permissive texts), and an unmatchable text says 'unrecognized' rather
+// than guessing.
+const licenseIdOf = (text) =>
+  /Apache License\s*\n\s*Version 2\.0/.test(text) ? 'Apache-2.0'
+  : /GNU GENERAL PUBLIC LICENSE\s*\n\s*Version 3/.test(text) ? 'GPL-3.0'
+  : /Mozilla Public License Version 2\.0/.test(text) ? 'MPL-2.0'
+  : /Neither the name of the copyright holder|BSD 3-Clause/i.test(text) ? 'BSD-3-Clause'
+  : /BSD 2-Clause/i.test(text) ? 'BSD-2-Clause'
+  : /^MIT License/m.test(text) ? 'MIT'
+  : /Redistribution and use in source and binary forms/.test(text) ? 'unrecognized' // some BSD variant; say so rather than guess
+  : /Permission is hereby granted, free of charge/.test(text) ? 'MIT'
+  : 'unrecognized'
+const licenseText = licenseFile ? read(licenseFile) : null
+const licenseId = licenseText && licenseText.trim() ? licenseIdOf(licenseText) : null
+// a detected id matches a declared one exactly, or with the GNU -only/-or-later suffix the
+// license TEXT alone cannot distinguish — that grant choice lives in the declaration.
+const idMatches = (declared) => declared === licenseId || declared === `${licenseId}-only` || declared === `${licenseId}-or-later`
+
+gate('license', `RS-license ${licenseFile ?? 'LICENSE'} exists and its id agrees with the manifest and README`, () => {
+  assert.ok(licenseFile !== null, `no license file at the repo root (looked for ${LICENSE_CANDIDATES.join(', ')}) — GitHub cannot supply a LICENSE org-wide, so a governed repo carries its own; add one, or disable checks.license with a stated reason`)
+  assert.ok(licenseText.trim().length > 0, `${licenseFile} is empty — an empty license file licenses nothing`)
+  if (licenseId === 'unrecognized') return // agreement is unverifiable — the named SKIP below says so out loud
+  // manifest agreement: the first JSON manifest that exists (the same pair the lockstep
+  // auto-detect trusts). The legacy object/array license form is itself the failure — npm
+  // deprecated it, and it renders as "[object Object]" anywhere a string is expected.
+  const manifestPath = ['.claude-plugin/plugin.json', 'package.json'].find((p) => exists(p))
+  if (manifestPath) {
+    let mf
+    try { mf = JSON.parse(read(manifestPath)) } catch (e) { throw new Error(`${manifestPath} is not valid JSON, so its license field cannot be checked: ${e.message}`) }
+    if (mf.license !== undefined && mf.license !== null) {
+      assert.ok(typeof mf.license === 'string', `${manifestPath} "license" uses the deprecated object/array form — declare a string SPDX expression (e.g. "${licenseId}")`)
+      const tokens = mf.license.split(/[\s()]+/).filter(Boolean)
+      assert.ok(tokens.some(idMatches), `${manifestPath} declares license "${mf.license}" but ${licenseFile} carries ${licenseId} — the manifest and the license file must agree`)
+    }
+  }
+  // README agreement: the License section (RS-readme already requires it last and non-empty)
+  // must name the id the license file carries.
+  if (exists(DOC.readme)) {
+    const rm = stripFences(read(DOC.readme))
+    const licH2 = [...rm.matchAll(/^## +(.+?)\s*$/gm)].filter((h) => /license/i.test(h[1])).pop()
+    if (licH2) {
+      const rest = rm.slice(licH2.index + licH2[0].length)
+      const nextH2 = rest.search(/^## /m)
+      const body = nextH2 === -1 ? rest : rest.slice(0, nextH2)
+      const esc = licenseId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      assert.ok(new RegExp(`\\b${esc}(?:-only|-or-later)?(?![A-Za-z0-9-])`).test(body), `${DOC.readme}'s License section must name the license ${licenseFile} carries (${licenseId}) — found no mention of it`)
+    }
+  }
+})
+if (!disabled.license && licenseId === 'unrecognized') {
+  skipCheck('RS-license (id agreement)', `${licenseFile} is not a recognized standard license text — LICENSE ⟺ manifest ⟺ README agreement cannot be checked; existence and non-emptiness were`)
+}
 
 console.log(`\n${pass} passed, ${fail} failed${skip ? `, ${skip} skipped (each named above — a skip is visible, never silent)` : ''}`)
 process.exit(fail ? 1 : 0)

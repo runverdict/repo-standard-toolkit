@@ -96,6 +96,10 @@ enforced by its own installed copy of `acceptance/test-repo-standard.mjs` (scope
 - **Stable meta files** — SECURITY, CONTRIBUTING, CODE_OF_CONDUCT (the
   [Contributor Covenant](https://www.contributor-covenant.org/), currently 3.0) exist and open
   with an H1.
+- **LICENSE is lint-governed too.** A license file exists at the repo root; when its text is a
+  recognizable standard license, the plugin manifest's `license` field and the README's License
+  section must name the same id. An unrecognized text is a loud named skip, never a silent
+  pass.
 - **No unfinished scaffolds.** No `TODO(scaffold)` marker survives in a governed doc — the lint
   reddens on any left behind, so a half-written scaffold cannot pass CI while looking done.
   Naming the marker in backticks (as this line does) is a mention, not an unfinished scaffold.

@@ -56,6 +56,10 @@ published specs, not invented here:
 - **Voice (§3) extends here.** No marketing superlatives and no "simply" in any meta doc.
 - **Stable meta files** — SECURITY, CONTRIBUTING, and CODE_OF_CONDUCT (the
   [Contributor Covenant](https://www.contributor-covenant.org/)) exist and open with an H1.
+- **LICENSE is lint-governed too.** A license file exists at the repo root; when its text is a
+  recognizable standard license, the version manifest's license field and the README's License
+  section must name the same id — an unrecognized text is a loud named skip, never a silent
+  pass.
 - **No unfinished scaffolds.** No `TODO(scaffold)` marker survives in a governed doc — the lint
   reddens on any left behind, so a half-written scaffold cannot pass CI while looking done.
 

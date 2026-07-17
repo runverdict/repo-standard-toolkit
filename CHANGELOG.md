@@ -86,6 +86,16 @@ tag is cut.
 **This repo governs itself** — `.repo-standard.json` + the installed lint copy + the CI gate,
 from the first push: the standard the plugin installs is the standard it lives under.
 
+**RS-license — the LICENSE file joins the enforced set**
+- The one scaffolded file the lint could not govern (a license text has no H1, so
+  RS-stable-docs cannot hold it) was deletable while CI stayed green. The new `license` check
+  requires a root license file (LICENSE / LICENCE / COPYING families, `.md`/`.txt` accepted),
+  requires it non-empty, fingerprints the text with the same heuristics `sense-state` uses, and
+  — when the text is a recognizable standard license — requires the version manifest's
+  `license` field (string form only; the deprecated npm object/array form reddens) and the
+  README's License section to name the same id, GNU `-only`/`-or-later` suffixes accepted. An
+  unrecognized text passes existence and skips agreement as a named, printed skip.
+
 **Version-directed lint upgrades**
 - The payload lint now carries a machine-readable `REPO_STANDARD_LINT_VERSION` constant
   (printed on every run, locked to the plugin version by a standing test). When an installed

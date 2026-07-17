@@ -62,7 +62,8 @@ const BASE_CONFIG = {
 
 const baseFiles = () => ({
   '.repo-standard.json': JSON.stringify(BASE_CONFIG, null, 2) + '\n',
-  'package.json': '{ "name": "fixture", "version": "1.2.3" }\n',
+  'package.json': '{ "name": "fixture", "version": "1.2.3", "license": "MIT" }\n',
+  'LICENSE': 'MIT License\n\nCopyright (c) 2026 fixture\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software.\n',
   'src/widget-a.txt': 'w\n',
   'src/widget-b.txt': 'w\n',
   'src/widget-c.txt': 'w\n',
@@ -281,6 +282,28 @@ expect('LB-M-stable-h1 a stable meta file without an H1 reddens RS-stable-docs',
 expect('LB-M-todos a surviving TODO(scaffold) marker reddens RS-todos',
   (f) => { f['README.md'] = f['README.md'].replace('PRs welcome.', 'PRs welcome. <!-- TODO(scaffold): write the real contributing note -->') }, 1,
   '✗ RS-todos', 'TODO(scaffold)')
+expect('LB-M-license-missing a deleted license file reddens RS-license (deletable-while-green was the hole)',
+  (f) => { f['LICENSE'] = null }, 1,
+  '✗ RS-license', 'no license file at the repo root')
+expect('LB-M-license-empty an empty license file reddens RS-license',
+  (f) => { f['LICENSE'] = '' }, 1,
+  '✗ RS-license', 'licenses nothing')
+expect('LB-M-license-manifest a manifest license disagreeing with the LICENSE text reddens RS-license',
+  (f) => { f['package.json'] = '{ "name": "fixture", "version": "1.2.3", "license": "Apache-2.0" }\n' }, 1,
+  '✗ RS-license', 'must agree')
+expect('LB-M-license-form the deprecated npm object license form reddens RS-license',
+  (f) => { f['package.json'] = '{ "name": "fixture", "version": "1.2.3", "license": { "type": "MIT" } }\n' }, 1,
+  '✗ RS-license', 'deprecated object/array form')
+expect('LB-M-license-readme a README License section naming a different id reddens RS-license',
+  (f) => { f['README.md'] = f['README.md'].replace('## License\n\nMIT.', '## License\n\nApache-2.0.') }, 1,
+  '✗ RS-license', 'must name the license')
+expect('LB-S-license-unrecognized an unrecognizable license text passes existence and SKIPS agreement, loudly',
+  (f) => { f['LICENSE'] = 'You may use this for good, not evil.\n' }, 0,
+  'RS-license (id agreement) SKIP')
+expect('LB-S-license-expression an SPDX expression containing the detected id stays green',
+  (f) => { f['package.json'] = '{ "name": "fixture", "version": "1.2.3", "license": "(MIT OR Apache-2.0)" }\n' }, 0)
+expect('LB-S-license-copying the GPL convention (COPYING) counts as the license file',
+  (f) => { f['COPYING'] = f['LICENSE']; f['LICENSE'] = null }, 0)
 
 // ── the hardenings from the adversarial pass, each locked so the bypass can never reopen ──
 expect('LB-M-voice-spaced a hyphenated ban written with a space ("world class") still reddens RS-voice',

@@ -76,6 +76,7 @@ const governed = (dir, { lint = true } = {}) => {
     'License last.', '',
   ].join('\n'))
   for (const f of ['SECURITY.md', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md']) writeFileSync(join(dir, f), `# ${f}\n\nBody.\n`)
+  writeFileSync(join(dir, 'LICENSE'), 'MIT License\n\nCopyright (c) 2026 Fixture\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software.\n')
   return dir
 }
 // run the installed hook the way git does: execute it, from the repo root
