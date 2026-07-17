@@ -16,7 +16,7 @@
  *       `.claude-plugin/plugin.json` version. Pre-first-release (no dated version yet) the
  *       lockstep is dormant.
  *   CV4 plugin.json declares the identity the catalog installs it by (name + repository). The
- *       marketplace catalog itself lives in runverdict/claude-plugins — one namespace, one
+ *       marketplace catalog itself lives in runverdict/plugins — one namespace, one
  *       authority — so there is no local marketplace.json to cross-check (see W7).
  *   CV5 the payload lint's REPO_STANDARD_LINT_VERSION === plugin.json version. sense-state
  *       orders upgrade vs. downgrade by that constant, so a constant that lags the release
@@ -84,7 +84,7 @@ check('CV3 LOCK: once a release is dated, the newest CHANGELOG version === plugi
 })
 
 check('CV4 plugin.json declares the identity the catalog installs it by', () => {
-  // The marketplace catalog lives in runverdict/claude-plugins (one namespace, one authority —
+  // The marketplace catalog lives in runverdict/plugins (one namespace, one authority —
   // see W7 in test-skill-wiring), so there is no local marketplace.json to cross-check against.
   // What this repo owns is its own identity: the name the catalog lists and users install by.
   const pj = JSON.parse(read('.claude-plugin/plugin.json'))

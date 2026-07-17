@@ -12,6 +12,13 @@ keeps its section, tagged `[YANKED]` after the date.
 
 ## [Unreleased]
 
+### Fixed
+
+- The README's install instructions and two test comments pointed at the catalog's pre-rename
+  repo name (`runverdict/claude-plugins`). The canonical catalog repo is `runverdict/plugins`
+  — the old name resolved only through GitHub's rename redirect — and the wiring test now pins
+  the canonical name.
+
 ## [0.2.0] - 2026-07-17
 
 ### Added

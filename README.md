@@ -118,7 +118,7 @@ sections, extra banned words), never the standard itself.
 ## Install
 
 ```bash
-claude plugin marketplace add runverdict/claude-plugins
+claude plugin marketplace add runverdict/plugins
 claude plugin install repo-standard-toolkit@runverdict-plugins
 ```
 

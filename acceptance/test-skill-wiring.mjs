@@ -21,7 +21,7 @@
  *       sf-security-review-toolkit each shipped a marketplace.json claiming `runverdict-plugins`
  *       and listing only themselves, `marketplace add` of the second REPLACED the first and
  *       knocked its installed plugins to "failed to load". The catalog lives in
- *       runverdict/claude-plugins, which lists every toolkit with a url source; this repo ships
+ *       runverdict/plugins, which lists every toolkit with a url source; this repo ships
  *       a plugin.json and stays out of the namespace business.
  *   W8  every `gh …` command a skill documents is covered by a Bash grant in its
  *       allowed-tools — a documented command with no grant fails at runtime, mid-scaffold,
@@ -114,15 +114,16 @@ check('W7 this repo publishes no marketplace of its own (one namespace, one auth
   // A marketplace name is a bare global key in the user's settings (`extraKnownMarketplaces`),
   // and `marketplace add` registers whatever catalog that name resolves to. If this repo also
   // published `runverdict-plugins`, adding it would REPLACE the catalog in
-  // runverdict/claude-plugins and every plugin installed from it would stop resolving. That is
+  // runverdict/plugins and every plugin installed from it would stop resolving. That is
   // not hypothetical — it is exactly what happened to sf-security-review-toolkit. The catalog
   // has one home; this repo ships a plugin.json and is listed FROM there.
   assert.ok(!existsSync(join(ROOT, '.claude-plugin', 'marketplace.json')),
-    'this repo must not ship .claude-plugin/marketplace.json — the runverdict-plugins catalog lives in runverdict/claude-plugins, and a second repo claiming that name silently breaks every plugin installed from the real one')
-  // the README must point installers at the catalog, not at this repo
+    'this repo must not ship .claude-plugin/marketplace.json — the runverdict-plugins catalog lives in runverdict/plugins, and a second repo claiming that name silently breaks every plugin installed from the real one')
+  // the README must point installers at the catalog, not at this repo (runverdict/plugins is
+  // the canonical name — claude-plugins was the pre-rename name and only works via redirect)
   const rm = read('README.md')
-  assert.ok(rm.includes('marketplace add runverdict/claude-plugins'),
-    'README Install must add the catalog repo (runverdict/claude-plugins), not this repo — `marketplace add runverdict/repo-standard-toolkit` has no marketplace to find')
+  assert.ok(rm.includes('marketplace add runverdict/plugins'),
+    'README Install must add the catalog repo (runverdict/plugins), not this repo — `marketplace add runverdict/repo-standard-toolkit` has no marketplace to find')
   assert.ok(rm.includes(`plugin install ${JSON.parse(read('.claude-plugin/plugin.json')).name}@runverdict-plugins`),
     'README Install must install this plugin from the runverdict-plugins namespace')
 })
