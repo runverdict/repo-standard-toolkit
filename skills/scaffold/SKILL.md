@@ -61,11 +61,22 @@ and no AI hits the same gate.
 4. **Install the lint verbatim.**
    `mkdir -p acceptance && cp ${CLAUDE_PLUGIN_ROOT}/payload/acceptance/test-repo-standard.mjs acceptance/`
    The payload file is copied byte-identical — never hand-edit it into a target (repo-specific
-   scope belongs in the config; a forked lint stops being upgradeable). If `sense-state` said
-   `upgrade` (an installed copy differs from the payload), check `git status` for that path
-   FIRST: uncommitted local edits would be unrecoverable, so surface them and get the
-   operator's go-ahead before replacing; a committed old copy is safely replaced (git keeps
-   the history) — either way the replacement is named in the recap.
+   scope belongs in the config; a forked lint stops being upgradeable). When an installed copy
+   differs from the payload, `sense-state` DIRECTS the move from the version constant each lint
+   carries — obey the direction, it exists because byte-difference alone cannot tell newer from
+   older:
+   - `upgrade` (payload newer): check `git status` for that path FIRST — uncommitted local
+     edits would be unrecoverable, so surface them and get the operator's go-ahead before
+     replacing; a committed old copy is safely replaced (git keeps the history). Either way
+     the replacement is named in the recap, with both versions.
+   - `downgrade` (payload OLDER than the committed lint): **stop.** The installed plugin is
+     stale; replacing would regress the repo's gate while looking like maintenance. Tell the
+     operator their plugin is older than what governs the repo, tell them to update the plugin,
+     and touch nothing — replace only if they explicitly ask for the downgrade after hearing
+     that, and record that choice in the recap.
+   - `local-edit` (same version, different bytes): someone hand-edited a copy. Diff the
+     installed lint against the payload, show the operator what changed, and proceed only on
+     their call — an edit may be a hotfix worth keeping until the next payload release.
 
 5. **Scaffold what is missing.** For each `scaffold` action in the plan, fill the matching
    `${CLAUDE_PLUGIN_ROOT}/payload/templates/` file with

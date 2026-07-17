@@ -86,6 +86,15 @@ tag is cut.
 **This repo governs itself** — `.repo-standard.json` + the installed lint copy + the CI gate,
 from the first push: the standard the plugin installs is the standard it lives under.
 
+**Version-directed lint upgrades**
+- The payload lint now carries a machine-readable `REPO_STANDARD_LINT_VERSION` constant
+  (printed on every run, locked to the plugin version by a standing test). When an installed
+  lint differs from the payload, `sense-state` reads the constant from both copies and directs
+  the move — `upgrade` (payload newer), `downgrade` (payload older: a loud stale-plugin
+  warning, and the skill stops rather than regressing the committed gate while calling it an
+  upgrade), or `local-edit` (same version, different bytes: diff and ask). Byte-difference
+  alone can no longer be mislabeled an upgrade.
+
 ### Fixed
 
 - The lint rejected Keep a Changelog's own `[YANKED]` vocabulary: the dated-heading rule

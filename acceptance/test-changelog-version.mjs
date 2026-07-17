@@ -18,6 +18,9 @@
  *   CV4 plugin.json declares the identity the catalog installs it by (name + repository). The
  *       marketplace catalog itself lives in runverdict/claude-plugins — one namespace, one
  *       authority — so there is no local marketplace.json to cross-check (see W7).
+ *   CV5 the payload lint's REPO_STANDARD_LINT_VERSION === plugin.json version. sense-state
+ *       orders upgrade vs. downgrade by that constant, so a constant that lags the release
+ *       would misdirect every governed repo's re-run.
  *
  * NOTE: CHANGELOG.md may not exist yet — CV1-CV3 then fail as named checks (never a crash),
  * because the file will land before this suite gates the repo.
@@ -87,6 +90,15 @@ check('CV4 plugin.json declares the identity the catalog installs it by', () => 
   const pj = JSON.parse(read('.claude-plugin/plugin.json'))
   assert.equal(pj.name, 'repo-standard-toolkit', 'plugin.json name is the install identity the catalog references')
   assert.match(pj.repository, /github\.com\/runverdict\/repo-standard-toolkit/, 'plugin.json repository must be the repo the catalog sources from')
+})
+
+check('CV5 the payload lint\'s embedded version constant is in lockstep with plugin.json', () => {
+  const pluginVersion = JSON.parse(read('.claude-plugin/plugin.json')).version
+  const m = read('payload/acceptance/test-repo-standard.mjs').match(/^const REPO_STANDARD_LINT_VERSION = '([^'\n]+)'/m)
+  assert.ok(m, "the payload lint must carry a `const REPO_STANDARD_LINT_VERSION = '<semver>'` line — sense-state parses it to direct upgrade vs. downgrade")
+  assert.match(m[1], SEMVER, `REPO_STANDARD_LINT_VERSION "${m[1]}" is valid semver`)
+  assert.equal(m[1], pluginVersion,
+    `REPO_STANDARD_LINT_VERSION (${m[1]}) must equal .claude-plugin/plugin.json (${pluginVersion}) — bump the constant with the plugin version, or a re-run misreads which lint is newer`)
 })
 
 console.log(`\n${pass} passed, ${fail} failed`)

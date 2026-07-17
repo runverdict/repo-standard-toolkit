@@ -54,6 +54,14 @@ import { fileURLToPath } from 'node:url'
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const CONFIG_PATH = join(ROOT, '.repo-standard.json')
 
+// The payload version this lint shipped with, printed on every run so a repo can always answer
+// "which lint version governs me?". harness/sense-state.mjs parses this line from BOTH the
+// committed copy and the plugin payload to DIRECT a re-run — upgrade (payload newer), downgrade
+// (payload older: a stale plugin must never silently replace a newer committed lint), or
+// local-edit (same version, different bytes). An acceptance test locks this constant to the
+// plugin manifest version; keep the line's exact shape — the parser matches it literally.
+const REPO_STANDARD_LINT_VERSION = '0.1.0'
+
 // ───────────────────────────────────────────────────────────────── the hardcoded canon
 const CHANGELOG_CATEGORIES = ['Added', 'Changed', 'Deprecated', 'Removed', 'Fixed', 'Security']
 // standard-readme: Install and Usage are "Required by default, optional for documentation
@@ -241,7 +249,7 @@ for (const [id, v] of Object.entries(checksCfg)) {
 // the meta-doc set: the frequently-updated docs the voice ban and count scans sweep.
 const metaDocs = [DOC.readme, DOC.changelog, DOC.conventions, ...(manifestCfg ? [manifestCfg.file] : []), ...extraDocs]
 
-console.log(`repo-standard standing test (config: ${exists('.repo-standard.json') ? '.repo-standard.json' : 'defaults — no .repo-standard.json'})`)
+console.log(`repo-standard standing test v${REPO_STANDARD_LINT_VERSION} (config: ${exists('.repo-standard.json') ? '.repo-standard.json' : 'defaults — no .repo-standard.json'})`)
 for (const [id, why] of Object.entries(disabled)) if (CHECK_IDS.includes(id)) console.log(`  ! ${id} is DISABLED in config: ${why}`)
 for (const noun of properNouns) console.log(`  ! voice exemption active (properNouns): "${noun}"`)
 

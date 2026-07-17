@@ -14,8 +14,13 @@
  *   governed   — all docs + lint + config + CI gate present; a re-run is reconcile-only
  *
  * Plan actions: scaffold (missing → fill from template) · audit (exists → run the lint, reconcile
- * only what reddens) · install (enforcement file missing) · upgrade (installed lint differs from
- * the payload — replace wholesale, config carries the repo specifics) · keep (byte-identical).
+ * only what reddens) · install (enforcement file missing) · keep (byte-identical) · repair (the
+ * config does not parse) · and, when the installed lint differs from the payload, a DIRECTED
+ * verdict from the version constant each lint carries: upgrade (payload newer — replace
+ * wholesale, config carries the repo specifics) · downgrade (payload OLDER — the plugin is
+ * stale; replacing would regress the repo's committed gate while calling it an upgrade, so the
+ * skill must stop) · local-edit (same version, different bytes — someone edited a copy; diff
+ * before touching).
  *
  * READ-ONLY by design: this engine never writes, never runs the lint (that is a separate,
  * visible step), and shells out only to read-only `git` queries. It never reads the clock — the
@@ -78,6 +83,29 @@ artifacts.LICENSE = licenseText === null ? { exists: false } : { exists: true, b
 // ---- enforcement ----
 const lintText = readIf(LINT_REL)
 const payloadText = existsSync(PAYLOAD_LINT) ? readFileSync(PAYLOAD_LINT, 'utf8') : null
+// the machine-readable version each lint copy carries (the payload lint's REPO_STANDARD_LINT_
+// VERSION constant, locked to the plugin version by an acceptance test). null = a copy from
+// before versioning existed — older than every versioned payload by construction.
+const lintVersionOf = (text) => text?.match(/^const REPO_STANDARD_LINT_VERSION = '([^'\n]+)'/m)?.[1] ?? null
+// semver compare, enough for plugin versions: numeric triple, then a prerelease is older than
+// its release, then prerelease identifiers left to right (numeric < alphanumeric, numeric
+// numerically, alphanumeric by ASCII).
+const semverCmp = (a, b) => {
+  const pa = a.split('-')[0].split('.').map(Number), pb = b.split('-')[0].split('.').map(Number)
+  for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pa[i] - pb[i]
+  const preA = a.includes('-') ? a.slice(a.indexOf('-') + 1).split('.') : null
+  const preB = b.includes('-') ? b.slice(b.indexOf('-') + 1).split('.') : null
+  if (!preA || !preB) return (preA ? -1 : 0) - (preB ? -1 : 0)
+  for (let i = 0; i < Math.max(preA.length, preB.length); i++) {
+    if (preA[i] === undefined) return -1
+    if (preB[i] === undefined) return 1
+    const na = /^\d+$/.test(preA[i]), nb = /^\d+$/.test(preB[i])
+    if (na && nb) { const d = Number(preA[i]) - Number(preB[i]); if (d) return d }
+    else if (na !== nb) return na ? -1 : 1
+    else if (preA[i] !== preB[i]) return preA[i] < preB[i] ? -1 : 1
+  }
+  return 0
+}
 const configText = readIf(CONFIG_REL)
 let configValid = null
 if (configText !== null) { try { JSON.parse(configText); configValid = true } catch { configValid = false } }
@@ -100,11 +128,26 @@ const ciRunsAcceptance = workflows.some((f) => runsGate(readIf(join('.github', '
 const acceptDir = join(target, 'acceptance')
 const existingTests = existsSync(acceptDir) ? readdirSync(acceptDir).filter((f) => /^test-.*\.mjs$/.test(f)).sort() : []
 
+const installedLintVersion = lintVersionOf(lintText)
+const payloadLintVersion = lintVersionOf(payloadText)
+// direction of a differing lint, decided by version, never by assumption: an unversioned
+// installed copy predates every versioned payload (upgrade); an unversioned PAYLOAD can never
+// prove it is newer, so the honest verdict is local-edit, not a claimed upgrade.
+const lintDrift = () => {
+  if (installedLintVersion && payloadLintVersion) {
+    const d = semverCmp(payloadLintVersion, installedLintVersion)
+    return d > 0 ? 'upgrade' : d < 0 ? 'downgrade' : 'local-edit'
+  }
+  return payloadLintVersion ? 'upgrade' : 'local-edit'
+}
+
 const enforcement = {
   lint: {
     path: LINT_REL,
     installed: lintText !== null,
     matchesPayload: lintText !== null && payloadText !== null ? sha256(lintText) === sha256(payloadText) : null,
+    installedVersion: installedLintVersion,
+    payloadVersion: payloadLintVersion,
   },
   config: { path: CONFIG_REL, present: configText !== null, valid: configValid },
   ci: { workflows, runsAcceptance: ciRunsAcceptance },
@@ -199,7 +242,7 @@ const classification = docsPresent.length === 0 ? 'greenfield' : allDocs && enfo
 
 const plan = []
 for (const doc of [...DOCS, 'LICENSE']) plan.push({ artifact: doc, action: artifacts[doc].exists ? 'audit' : 'scaffold' })
-plan.push({ artifact: LINT_REL, action: !enforcement.lint.installed ? 'install' : enforcement.lint.matchesPayload ? 'keep' : 'upgrade' })
+plan.push({ artifact: LINT_REL, action: !enforcement.lint.installed ? 'install' : enforcement.lint.matchesPayload ? 'keep' : lintDrift() })
 plan.push({ artifact: CONFIG_REL, action: !enforcement.config.present ? 'install' : enforcement.config.valid === false ? 'repair' : 'audit' })
 plan.push({ artifact: '.github/workflows (acceptance gate)', action: ciRunsAcceptance ? 'keep' : 'install' })
 
@@ -211,7 +254,13 @@ if (asJson) {
   console.log(`sense-state: ${target}`)
   console.log(`  classification: ${classification}`)
   for (const doc of [...DOCS, 'LICENSE']) console.log(`  ${artifacts[doc].exists ? '●' : '○'} ${doc}${artifacts[doc].exists && artifacts[doc].hasH1 === false ? '  (no H1)' : ''}`)
-  console.log(`  ${enforcement.lint.installed ? '●' : '○'} ${LINT_REL}${enforcement.lint.installed ? (enforcement.lint.matchesPayload ? ' (matches payload)' : ' (DIFFERS from payload — upgrade)') : ''}`)
+  const lintNote = !enforcement.lint.installed ? ''
+    : enforcement.lint.matchesPayload ? ' (matches payload)'
+    : ` (DIFFERS from payload — ${lintDrift()}: installed ${installedLintVersion ?? 'unversioned'}, payload ${payloadLintVersion ?? 'unversioned'})`
+  console.log(`  ${enforcement.lint.installed ? '●' : '○'} ${LINT_REL}${lintNote}`)
+  if (enforcement.lint.installed && !enforcement.lint.matchesPayload && lintDrift() === 'downgrade') {
+    console.log(`  ! STALE PLUGIN: the installed plugin's payload (${payloadLintVersion}) is OLDER than the lint governing this repo (${installedLintVersion}) — replacing would downgrade the committed gate; update the plugin instead`)
+  }
   console.log(`  ${enforcement.config.present ? '●' : '○'} ${CONFIG_REL}${enforcement.config.valid === false ? ' (INVALID JSON)' : ''}`)
   console.log(`  ${ciRunsAcceptance ? '●' : '○'} CI acceptance gate${workflows.length ? ` (workflows: ${workflows.join(', ')})` : ''}`)
   console.log('  plan:')

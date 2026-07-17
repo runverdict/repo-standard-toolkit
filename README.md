@@ -130,7 +130,10 @@ From any repo root, one command at any maturity:
   scoped so it is never born red on someone else's tests.
 - **Re-run / upgrade:** sensing is the idempotency mechanism — a governed repo reconciles, and
   a newer payload lint replaces the installed copy wholesale (repo specifics live in the
-  config, so upgrades never clobber them).
+  config, so upgrades never clobber them). The replacement is version-directed: every lint
+  carries its payload version, so a re-run distinguishes upgrade from downgrade from local
+  edit — and a stale plugin is stopped rather than allowed to downgrade a newer committed
+  lint while calling it an upgrade.
 
 Every run ends with an automated-vs-manual recap: every file created or changed with why, and
 what only the operator can finish. The gate this repo runs on itself is the same loop the

@@ -11,17 +11,20 @@
  *   SS2 README.md alone → 'partial'; README audit, CHANGELOG scaffold
  *   SS3 governed fixture (all docs + payload-identical lint + config + CI gate) → 'governed',
  *       lint keep, matchesPayload true (SKIPPED with a note if the payload lint does not exist)
- *   SS4 drifted installed lint → upgrade, matchesPayload false, classification still 'governed'
- *       (drift is an upgrade, not a de-governing; SKIPPED alongside SS3)
+ *   SS4 drifted installed lint at the SAME version → local-edit, matchesPayload false,
+ *       classification still 'governed' (drift is not a de-governing; SKIPPED alongside SS3)
  *   SS5 --json parses; two runs are byte-identical; the engine writes nothing into the fixture
  *   SS6 derivation from package.json with no git — projectName/tagline/licenseId derived,
  *       git.isRepo false, hasH1:false reported for a doc without an H1
  *   SS7 bad invocation (file as target, missing dir, unknown flag) → exit 2 with a message
+ *   SS10 lint drift is DIRECTED by the embedded version constant: older installed → upgrade,
+ *        newer installed → downgrade (with a loud stale-plugin warning), constant-less
+ *        installed copy → upgrade (predates versioning), and both versions are reported.
  *
  * Dependency-free: node acceptance/test-sense-state.mjs
  */
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, appendFileSync, copyFileSync, readdirSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, appendFileSync, copyFileSync, readdirSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
@@ -118,13 +121,49 @@ try {
       assert.equal(planAction(r, 'acceptance/test-repo-standard.mjs'), 'keep')
     })
     appendFileSync(join(governed, 'acceptance', 'test-repo-standard.mjs'), '\n')
-    check('SS4: drifted installed lint is upgrade, matchesPayload false', () => {
+    check('SS4: drifted installed lint at the SAME version is local-edit, matchesPayload false', () => {
       const r = sense(governed)
       assert.equal(r.enforcement.lint.matchesPayload, false)
-      assert.equal(planAction(r, 'acceptance/test-repo-standard.mjs'), 'upgrade')
+      // same version constant, different bytes: neither copy can claim to be newer — calling
+      // this "upgrade" is exactly the mislabel the version constant exists to kill.
+      assert.equal(planAction(r, 'acceptance/test-repo-standard.mjs'), 'local-edit')
     })
     check('SS4: lint drift does not de-govern the classification', () => {
       assert.equal(sense(governed).classification, 'governed')
+    })
+
+    // ---- SS10: drift direction comes from the version constant, never from assumption ----
+    const payloadSrc = readFileSync(PAYLOAD_LINT, 'utf8')
+    const payloadVersion = payloadSrc.match(/^const REPO_STANDARD_LINT_VERSION = '([^'\n]+)'/m)?.[1]
+    const withLintVersion = (v) => payloadSrc.replace(/^const REPO_STANDARD_LINT_VERSION = '[^'\n]+'/m, `const REPO_STANDARD_LINT_VERSION = '${v}'`)
+    const driftFixture = (name, lintSrc) => {
+      const d = join(tmp, name)
+      buildGoverned(d)
+      writeFileSync(join(d, 'acceptance', 'test-repo-standard.mjs'), lintSrc)
+      return d
+    }
+    check('SS10: the payload lint carries a parseable version constant (everything below keys off it)', () => {
+      assert.ok(payloadVersion, 'REPO_STANDARD_LINT_VERSION must be parseable from the payload lint')
+    })
+    check('SS10: an installed lint OLDER than the payload is a directed upgrade, versions reported', () => {
+      const r = sense(driftFixture('drift-older', withLintVersion('0.0.1')))
+      assert.equal(planAction(r, 'acceptance/test-repo-standard.mjs'), 'upgrade')
+      assert.equal(r.enforcement.lint.installedVersion, '0.0.1')
+      assert.equal(r.enforcement.lint.payloadVersion, payloadVersion)
+    })
+    check('SS10: an installed lint NEWER than the payload is a downgrade, never an "upgrade"', () => {
+      const r = sense(driftFixture('drift-newer', withLintVersion('99.0.0')))
+      assert.equal(planAction(r, 'acceptance/test-repo-standard.mjs'), 'downgrade')
+    })
+    check('SS10: the downgrade verdict prints a loud STALE PLUGIN warning in the human output', () => {
+      const out = execFileSync('node', [ENGINE, '--target', join(tmp, 'drift-newer')], { encoding: 'utf8' })
+      assert.ok(out.includes('STALE PLUGIN'), `the human output must warn, got:\n${out}`)
+      assert.ok(out.includes('downgrade'), 'the lint line names the direction')
+    })
+    check('SS10: an installed copy from before versioning (no constant) is an upgrade', () => {
+      const r = sense(driftFixture('drift-preversion', payloadSrc.replace(/^const REPO_STANDARD_LINT_VERSION = '[^'\n]+'\n/m, '')))
+      assert.equal(planAction(r, 'acceptance/test-repo-standard.mjs'), 'upgrade')
+      assert.equal(r.enforcement.lint.installedVersion, null)
     })
   }
 
