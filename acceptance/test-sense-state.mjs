@@ -27,6 +27,8 @@
  *        (LICENSE.md / COPYING / …) counts as licensed — matching the lint's RS-license — a
  *        DIRECTORY named like a doc cannot mask the real file, and the tagline fallback reads
  *        the SENSED README, not a hardcoded root path.
+ *   SS13 a recorded scaffold provenance block is reported (version + answers, named in the
+ *        human output); a config without one reports null, never a fabricated default.
  *
  * Dependency-free: node acceptance/test-sense-state.mjs
  */
@@ -258,6 +260,20 @@ try {
     mkdirSync(join(d, '.github'), { recursive: true })
     writeFileSync(join(d, '.github', 'README.md'), '# proj\n\nA tagline that lives in .github.\n')
     assert.equal(sense(d).derived.tagline, 'A tagline that lives in .github.')
+  })
+
+  // ---- SS13: recorded scaffold provenance is reported, never invented ----
+  check('SS13: a recorded scaffold block is reported (version + answers) and named in human output', () => {
+    const d = join(tmp, 'scaffold-block')
+    buildGoverned(d)
+    writeFileSync(join(d, '.repo-standard.json'), JSON.stringify({ version: 1, scaffold: { pluginVersion: '0.1.0', answers: { LICENSE_ID: 'MIT' } } }))
+    const r = sense(d)
+    assert.equal(r.enforcement.config.scaffold.pluginVersion, '0.1.0')
+    assert.deepEqual(r.enforcement.config.scaffold.answers, { LICENSE_ID: 'MIT' })
+    const human = execFileSync('node', [ENGINE, '--target', d], { encoding: 'utf8' })
+    assert.ok(human.includes('scaffolded by plugin 0.1.0'), `human output names the recorded version, got:\n${human}`)
+    writeFileSync(join(d, '.repo-standard.json'), '{}')
+    assert.equal(sense(d).enforcement.config.scaffold, null, 'no block → null, never a fabricated default')
   })
 
   // ---- SS7: bad invocation exits 2 with a message ----

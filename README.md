@@ -215,6 +215,12 @@ glob, a line-regex count) and to every other doc stating it — a forgotten upda
 build instead of shipping a lie. `under` scopes a count to a region (e.g. `[Unreleased]`) so
 historical numbers in dated CHANGELOG blocks stay historical.
 
+A `scaffold` block — written by the skill, never by hand — records provenance: the plugin
+version that scaffolded the repo and the operator's confirmed answers. A re-run pre-fills its
+questions from it and re-asks only what is missing, and the repo itself can answer which
+standard version governs it, with the plugin gone. The lint validates the block's shape and
+never varies enforcement by it.
+
 ## Origin
 
 Born from

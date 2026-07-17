@@ -125,7 +125,7 @@ const rawConfig = exists('.repo-standard.json') ? (() => {
   try { return JSON.parse(read('.repo-standard.json')) } catch (e) { bad(`.repo-standard.json is not valid JSON: ${e.message}`); return {} }
 })() : {}
 
-const KNOWN_TOP = ['version', 'docs', 'manifest', 'versionManifest', 'readme', 'conventions', 'voice', 'counts', 'stableDocs', 'checks']
+const KNOWN_TOP = ['version', 'docs', 'manifest', 'versionManifest', 'readme', 'conventions', 'voice', 'counts', 'stableDocs', 'checks', 'scaffold']
 for (const k of Object.keys(rawConfig)) if (!isComment(k) && !KNOWN_TOP.includes(k)) bad(`unknown top-level key "${k}" (known: ${KNOWN_TOP.join(', ')})`)
 if (exists('.repo-standard.json') && !configErrors.some((m) => m.includes('not valid JSON')) && rawConfig.version !== 1) {
   bad(`"version" must be the number 1 (got ${JSON.stringify(rawConfig.version)}) — a present config declares its format version`)
@@ -241,6 +241,23 @@ else {
       try { underRe = new RegExp(spec.under) } catch (e) { bad(`"counts.${id}.under" does not compile: ${e.message}`); continue }
     }
     counts.push({ id, pattern: re, docs: spec.docs !== undefined ? strArray(spec.docs, `counts.${id}.docs`) : null, glob: spec.glob, file: spec.file, lineRegex: spec.lineRegex, under: underRe, minMentions: spec.minMentions })
+  }
+}
+
+// scaffold: provenance the scaffold skill records — which plugin version produced this repo's
+// governance and the operator's confirmed answers, so a re-run pre-fills instead of re-asking
+// and "which standard version governs this repo?" is answerable from the repo alone. The lint
+// validates only the SHAPE; it never acts on the content — enforcement stays version-blind.
+const scaffoldCfg = sub(rawConfig, 'scaffold', ['pluginVersion', 'answers'])
+if (scaffoldCfg.pluginVersion !== undefined && !(typeof scaffoldCfg.pluginVersion === 'string' && SEMVER.test(scaffoldCfg.pluginVersion))) {
+  bad(`"scaffold.pluginVersion" must be a semver string — got ${JSON.stringify(scaffoldCfg.pluginVersion)}`)
+}
+if (scaffoldCfg.answers !== undefined) {
+  if (typeof scaffoldCfg.answers !== 'object' || Array.isArray(scaffoldCfg.answers) || scaffoldCfg.answers === null) bad('"scaffold.answers" must be an object of PLACEHOLDER → value strings')
+  else for (const [k, v] of Object.entries(scaffoldCfg.answers)) {
+    if (isComment(k)) continue
+    if (!/^[A-Z0-9_]+$/.test(k)) bad(`"scaffold.answers.${k}" — keys are template placeholder names ([A-Z0-9_]+)`)
+    else if (typeof v !== 'string') bad(`"scaffold.answers.${k}" must be a string`)
   }
 }
 

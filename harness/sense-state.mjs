@@ -129,8 +129,23 @@ const semverCmp = (a, b) => {
   return 0
 }
 const configText = readIf(CONFIG_REL)
-let configValid = null
-if (configText !== null) { try { JSON.parse(configText); configValid = true } catch { configValid = false } }
+let configValid = null, configScaffold = null
+if (configText !== null) {
+  try {
+    const parsed = JSON.parse(configText)
+    configValid = true
+    // the provenance block the skill records at scaffold time — reported so the plan can
+    // distinguish "scaffolded by 0.1.0" from "never recorded", and so a re-run can pre-fill
+    // the operator's confirmed answers instead of re-asking.
+    const s = parsed.scaffold
+    if (s && typeof s === 'object' && !Array.isArray(s)) {
+      configScaffold = {
+        pluginVersion: typeof s.pluginVersion === 'string' ? s.pluginVersion : null,
+        answers: s.answers && typeof s.answers === 'object' && !Array.isArray(s.answers) ? s.answers : {},
+      }
+    }
+  } catch { configValid = false }
+}
 
 const wfDir = join(target, '.github', 'workflows')
 const workflows = existsSync(wfDir) ? readdirSync(wfDir).filter((f) => /\.ya?ml$/.test(f)).sort() : []
@@ -171,7 +186,7 @@ const enforcement = {
     installedVersion: installedLintVersion,
     payloadVersion: payloadLintVersion,
   },
-  config: { path: CONFIG_REL, present: configText !== null, valid: configValid },
+  config: { path: CONFIG_REL, present: configText !== null, valid: configValid, scaffold: configScaffold },
   ci: { workflows, runsAcceptance: ciRunsAcceptance },
   existingAcceptanceTests: existingTests,
 }
@@ -296,7 +311,7 @@ if (asJson) {
   if (enforcement.lint.installed && !enforcement.lint.matchesPayload && lintDrift() === 'downgrade') {
     console.log(`  ! STALE PLUGIN: the installed plugin's payload (${payloadLintVersion}) is OLDER than the lint governing this repo (${installedLintVersion}) — replacing would downgrade the committed gate; update the plugin instead`)
   }
-  console.log(`  ${enforcement.config.present ? '●' : '○'} ${CONFIG_REL}${enforcement.config.valid === false ? ' (INVALID JSON)' : ''}`)
+  console.log(`  ${enforcement.config.present ? '●' : '○'} ${CONFIG_REL}${enforcement.config.valid === false ? ' (INVALID JSON)' : ''}${configScaffold?.pluginVersion ? ` (scaffolded by plugin ${configScaffold.pluginVersion})` : ''}`)
   console.log(`  ${ciRunsAcceptance ? '●' : '○'} CI acceptance gate${workflows.length ? ` (workflows: ${workflows.join(', ')})` : ''}`)
   console.log('  plan:')
   for (const p of plan) console.log(`    ${p.action.padEnd(8)} ${p.artifact}`)

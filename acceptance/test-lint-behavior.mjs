@@ -461,6 +461,20 @@ expect('LB-C-decoy pointing docs.readme at a non-rendered path exits 2 (anti-dec
 expect('LB-C-badcount a count pattern without a capture group exits 2',
   (f) => editConfig(f, (c) => { c.counts.widgets.pattern = '\\d+ widget' }), 2,
   'needs a capture group')
+expect('LB-S-scaffold a recorded scaffold provenance block is valid config (stays green)',
+  (f) => editConfig(f, (c) => { c.scaffold = { pluginVersion: '0.1.0', answers: { COPYRIGHT_HOLDER: 'Acme Maintainers', LICENSE_ID: 'MIT' } } }), 0)
+expect('LB-C-scaffold-shape a non-object scaffold block exits 2',
+  (f) => editConfig(f, (c) => { c.scaffold = 5 }), 2,
+  '"scaffold" must be an object')
+expect('LB-C-scaffold-version a non-semver scaffold.pluginVersion exits 2',
+  (f) => editConfig(f, (c) => { c.scaffold = { pluginVersion: 'latest' } }), 2,
+  '"scaffold.pluginVersion" must be a semver string')
+expect('LB-C-scaffold-key an unknown scaffold key exits 2 and names it',
+  (f) => editConfig(f, (c) => { c.scaffold = { pluginVersion: '0.1.0', who: 'me' } }), 2,
+  'unknown key "scaffold.who"')
+expect('LB-C-scaffold-answer a non-string answer value exits 2',
+  (f) => editConfig(f, (c) => { c.scaffold = { answers: { YEAR: 2026 } } }), 2,
+  '"scaffold.answers.YEAR" must be a string')
 
 // ──────────────────────────────────────────────────────────── loud skips and disables
 expect('LB-S-manifest-skip no manifest declared → a printed SKIP line, not a silent pass',

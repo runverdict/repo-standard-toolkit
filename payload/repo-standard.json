@@ -40,6 +40,8 @@
   "//stableDocs": "Rarely-changing meta files that must exist and open with an H1. Replacing this list is a visible weakening — think before shrinking it.",
   "stableDocs": ["SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md"],
 
+  "//scaffold": "Provenance, written by the scaffold skill — never by hand: { \"pluginVersion\": \"<the plugin version that scaffolded this repo>\", \"answers\": { \"<PLACEHOLDER>\": \"<the value the operator confirmed>\" } }. A re-run pre-fills its questions from answers and re-asks only what is missing, and the repo itself can answer which standard version governs it. The lint validates the shape only; enforcement never varies by it.",
+
   "//checks": "The only off switch, per check id, and it is loud: { \"<id>\": { \"enabled\": false, \"why\": \"<reason printed on every run>\" } }. Ids: changelog, lockstep, readme, conventions, manifest, voice, counts, reflexivity, stable-docs, todos, license, placeholders, shadow.",
   "checks": {}
 }

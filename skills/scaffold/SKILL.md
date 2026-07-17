@@ -52,7 +52,11 @@ and no AI hits the same gate.
    (`derived.licenseId`; an `unrecognized` value means read the LICENSE file yourself and
    confirm with the operator). If a value is unknowable and the operator is absent, leave the
    placeholder-bearing artifact unscaffolded and say so in the recap rather than shipping a
-   fabricated value.
+   fabricated value. On a re-run, the sense report's `enforcement.config.scaffold.answers`
+   block holds the values a previous run recorded as operator-confirmed: reuse them, name each
+   reused value in the recap, and ask only for what is missing or newly needed — never
+   re-interrogate the operator for a contact they already gave, and never reuse a value the
+   recorded block does not carry.
 
 3. **Write the enforcement scope first** — `.repo-standard.json` — so every later step can run
    the lint. Start from `${CLAUDE_PLUGIN_ROOT}/payload/repo-standard.json` (the default scope)
@@ -60,7 +64,12 @@ and no AI hits the same gate.
    ONLY for a numeric claim with a countable source in this repo (e.g. `acceptance/test-*.mjs`
    for "N standing tests") — a count you cannot source is a lie the lint would then enforce.
    If the repo already has a `.repo-standard.json`, merge key-by-key and quote every change in
-   the recap; operator customizations win over defaults.
+   the recap; operator customizations win over defaults. Record provenance in the same file:
+   write (or update) the `scaffold` block — `pluginVersion` from
+   `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`, `answers` holding exactly the step-2
+   values this run used, keyed by placeholder name. Record only operator-confirmed values,
+   never derived guesses — the block is what lets the next re-run skip the interrogation, and
+   what lets the repo answer "which standard version governs me?" with the plugin gone.
 
 4. **Install the lint verbatim.**
    `mkdir -p acceptance && cp ${CLAUDE_PLUGIN_ROOT}/payload/acceptance/test-repo-standard.mjs acceptance/`
@@ -186,6 +195,7 @@ must stay loud in the recap, or the recap inflates exactly the claim this toolki
 police. State the blocking status in plain words — "the check is required and active", "the
 ruleset is in evaluate (dry-run): a red run logs but does not block", or "no ruleset: a red run
 turns the badge red and blocks nothing" — never imply the gate blocks when it only reports.
+Name the recorded `scaffold.pluginVersion` — the payload version that now governs the repo.
 State plainly that the standard is now enforced by the committed lint in CI, not by this plugin
 — removing the plugin changes nothing about enforcement. If the pre-push hook was installed, say
 where it lives, that it is local-only and uncommitted (a teammate who wants it re-runs this

@@ -118,6 +118,14 @@ from the first push: the standard the plugin installs is the standard it lives u
   cross-location duplicate prints a DUPLICATE warning; the skill reconciles a doc where it
   lives and leaves resolving duplicates to the operator.
 
+**Recorded scaffold provenance** (`.repo-standard.json` → `scaffold`)
+- The skill records which plugin version produced the repo's governance and the operator's
+  confirmed answers in a `scaffold` block (`{ pluginVersion, answers }`): a re-run pre-fills
+  its questions from the block and re-asks only what is missing, `sense-state` reports the
+  recorded version ("scaffolded by plugin 0.1.0"), and the repo can answer "which standard
+  version governs me?" with the plugin gone. The lint validates the block's shape (semver
+  version, PLACEHOLDER → string answers) and never varies enforcement by it.
+
 **Version-directed lint upgrades**
 - The payload lint now carries a machine-readable `REPO_STANDARD_LINT_VERSION` constant
   (printed on every run, locked to the plugin version by a standing test). When an installed
