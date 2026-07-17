@@ -8,7 +8,7 @@ Claude.
 
 > **Status: built, pre-first-release.** The plugin version is `0.1.0`; the first tag is cut
 > after field runs against real repos. Everything below describes what exists and is
-> test-guarded in this tree — 10 standing tests, zero npm dependencies, and the repo governs
+> test-guarded in this tree — 11 standing tests, zero npm dependencies, and the repo governs
 > itself with the exact lint it installs elsewhere.
 
 ## Table of Contents
@@ -241,7 +241,7 @@ mutation coverage in `acceptance/test-lint-behavior.mjs`.)
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow and
 [`CONVENTIONS.md`](CONVENTIONS.md) for the binding rules — the enforcement/generation split,
 the payload byte-identity discipline, and the rule that every determinizable property lands in
-a standing test (10 standing tests today; the pass is zero failures, never a fixed count). By
+a standing test (11 standing tests today; the pass is zero failures, never a fixed count). By
 participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License

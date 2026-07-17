@@ -66,7 +66,7 @@ tag is cut.
   reflexivity check requires), CONTRIBUTING, Contributor Covenant 3.0 CODE_OF_CONDUCT,
   SECURITY, and Apache-2.0 / MIT license texts.
 
-**The proof that it holds** (10 standing tests, zero npm dependencies)
+**The proof that it holds** (11 standing tests, zero npm dependencies)
 - Mutation coverage of every lint rule: a known-clean fixture passes, then one targeted
   violation per rule must redden with the right check named — including the exemptions
   (quoted/fenced/properNouns) staying green and the exit-class split staying 2 vs 1.
@@ -126,6 +126,23 @@ from the first push: the standard the plugin installs is the standard it lives u
   warning, and the skill stops rather than regressing the committed gate while calling it an
   upgrade), or `local-edit` (same version, different bytes: diff and ask). Byte-difference
   alone can no longer be mislabeled an upgrade.
+
+**The gate cannot be wedged or hijacked** (`payload/workflows/*`, `payload/rulesets/`)
+- Both payload workflows now trigger on `merge_group` alongside push and pull_request — the
+  moment the acceptance check is made required on a repo using a merge queue, queued PRs wait
+  on checks fired by the queue's own event, and a workflow without the trigger deadlocks the
+  queue.
+- `actions/checkout` is pinned to a full commit SHA (verified against the upstream tag, named
+  in a trailing comment) instead of a movable tag — OpenSSF Scorecard's Pinned-Dependencies —
+  and `actions/setup-node` is dropped entirely: the lint and suite run on Node built-ins
+  (18+ floor) and every ubuntu-latest image ships a newer Node on PATH, so the gate carries
+  one less third-party action.
+- `payload/rulesets/repo-standard.json` — a GitHub branch ruleset that makes the `test` check
+  REQUIRED on the default branch (plus: no deletions, no force pushes, changes via PR, strict
+  up-to-date checks). It ships in `evaluate` (dry-run) enforcement: flipping to `active` is
+  the operator's deliberate act. A standing test locks the required-check context to the job
+  id the payload workflows actually define.
+- A new `test-gate-posture` standing test pins all of the above.
 
 ### Changed
 
