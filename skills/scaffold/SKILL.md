@@ -160,10 +160,11 @@ End every run with two lists. **Automated:** every file created / modified / upg
 each, with the reconcile before→after quotes and which template or engine produced it.
 **Manual:** what only the operator can finish — reviewing the generated prose, supplying any
 contact/tagline left open, committing and pushing, and (once pushed) confirming the CI gate ran.
-Report the lint's verdict with skips AS skips — "10 passed, 1 skipped (RS-lockstep: no version
-manifest)" — never folded into a pass count, and never "all N checks pass" when anything was
-skipped or disabled: a skip the lint prints loudly must stay loud in the recap, or the recap
-inflates exactly the claim this toolkit exists to police.
+Report the lint's verdict with skips AS skips — "N passed, 1 skipped (RS-lockstep: no version
+manifest)", with N being whatever the lint itself printed — never folded into a pass count, and
+never "all checks pass" when anything was skipped or disabled: a skip the lint prints loudly
+must stay loud in the recap, or the recap inflates exactly the claim this toolkit exists to
+police.
 State plainly that the standard is now enforced by the committed lint in CI, not by this plugin
 — removing the plugin changes nothing about enforcement. If the pre-push hook was installed, say
 where it lives, that it is local-only and uncommitted (a teammate who wants it re-runs this

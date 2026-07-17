@@ -133,9 +133,10 @@ from the first push: the standard the plugin installs is the standard it lives u
   every plan action `audit`/`keep` and no value missing — so a correct no-op re-run no longer
   has to interrogate the operator to approve nothing (previously the written step forced a
   pointless confirmation, and a correct run had to deviate from it).
-- The skill's recap rules now require skips to be reported as skips ("10 passed, 1 skipped
-  (RS-lockstep: …)"), never folded into a pass count — a recap claiming "all N checks pass"
-  over a skipped check inflated exactly the claim this toolkit polices.
+- The skill's recap rules now require skips to be reported as skips ("N passed, 1 skipped
+  (RS-lockstep: …)", N being whatever the lint printed), never folded into a pass count — a
+  recap claiming "all checks pass" over a skipped check inflated exactly the claim this
+  toolkit polices.
 
 ### Fixed
 
