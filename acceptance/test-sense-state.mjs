@@ -20,6 +20,9 @@
  *   SS10 lint drift is DIRECTED by the embedded version constant: older installed → upgrade,
  *        newer installed → downgrade (with a loud stale-plugin warning), constant-less
  *        installed copy → upgrade (predates versioning), and both versions are reported.
+ *   SS11 doc sensing is location-aware (.github/ > root > docs/, GitHub's precedence): a doc
+ *        living only in .github/ is sensed and audited (never re-scaffolded at root), and a
+ *        cross-location duplicate is reported with the served path named.
  *
  * Dependency-free: node acceptance/test-sense-state.mjs
  */
@@ -203,6 +206,28 @@ try {
     const r = sense(derive)
     assert.equal(r.artifacts['README.md'].exists, true)
     assert.equal(r.artifacts['README.md'].hasH1, false)
+  })
+
+  // ---- SS11: location-aware doc sensing (.github/ > root > docs/) ----
+  check('SS11: a doc living only in .github/ is sensed at its real path and audited, never re-scaffolded', () => {
+    const d = join(tmp, 'gh-only')
+    mkdirSync(join(d, '.github'), { recursive: true })
+    writeFileSync(join(d, '.github', 'CONTRIBUTING.md'), '# Contributing\n\nBody.\n')
+    const r = sense(d)
+    assert.equal(r.artifacts['CONTRIBUTING.md'].exists, true)
+    assert.equal(r.artifacts['CONTRIBUTING.md'].path, '.github/CONTRIBUTING.md')
+    assert.equal(planAction(r, 'CONTRIBUTING.md'), 'audit')
+  })
+  check('SS11: a cross-location duplicate reports the GitHub-served path first and warns in human output', () => {
+    const d = join(tmp, 'dup-doc')
+    mkdirSync(join(d, '.github'), { recursive: true })
+    writeFileSync(join(d, 'CONTRIBUTING.md'), '# Contributing\n\nRoot copy.\n')
+    writeFileSync(join(d, '.github', 'CONTRIBUTING.md'), '# Contributing\n\nShadowing copy.\n')
+    const r = sense(d)
+    assert.equal(r.artifacts['CONTRIBUTING.md'].path, '.github/CONTRIBUTING.md', 'the .github/ copy is what GitHub serves')
+    assert.deepEqual(r.artifacts['CONTRIBUTING.md'].duplicates, ['CONTRIBUTING.md'])
+    const human = execFileSync('node', [ENGINE, '--target', d], { encoding: 'utf8' })
+    assert.ok(human.includes('DUPLICATE'), `the human output must warn about the shadowed duplicate, got:\n${human}`)
   })
 
   // ---- SS7: bad invocation exits 2 with a message ----

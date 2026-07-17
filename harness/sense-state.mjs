@@ -3,7 +3,9 @@
  * sense-state.mjs — the read-only inventory that tells the scaffolder what kind of repo it is
  * standing in, so greenfield vs. mid-project is DETECTED, never assumed.
  *
- * Reports, per standard artifact, whether it exists (and opens with an H1); whether the
+ * Reports, per standard artifact, whether it exists (and opens with an H1) and where it lives
+ * (GitHub serves README + community health files with .github/ > root > docs/ precedence — the
+ * sensed path is the one GitHub serves, lower-precedence duplicates are named); whether the
  * enforcement layer is installed (the committed lint — and whether it is byte-identical to this
  * plugin's payload copy — the config, a CI workflow that runs the acceptance suite); the repo
  * signals a scaffolder can derive placeholder values from (git remote, manifests); and a
@@ -72,10 +74,21 @@ const opensWithH1 = (text) => {
 }
 const artifacts = {}
 for (const doc of DOCS) {
-  const text = readIf(doc)
+  // GitHub serves README and the community health files with precedence .github/ > root >
+  // docs/ — sense where a doc ACTUALLY lives, so the plan audits an existing .github/ copy
+  // instead of scaffolding a root duplicate that would shadow it or be shadowed by it. The
+  // first hit is what GitHub renders; further hits are duplicates the lint's RS-shadow reddens.
+  const found = [`.github/${doc}`, doc, `docs/${doc}`].filter((p) => existsSync(join(target, p)))
+  const text = found.length ? readIf(found[0]) : null
   artifacts[doc] = text === null
     ? { exists: false }
-    : { exists: true, bytes: Buffer.byteLength(text), hasH1: opensWithH1(text) }
+    : {
+      exists: true,
+      path: found[0],
+      bytes: Buffer.byteLength(text),
+      hasH1: opensWithH1(text),
+      ...(found.length > 1 ? { duplicates: found.slice(1) } : {}),
+    }
 }
 const licenseText = readIf('LICENSE')
 artifacts.LICENSE = licenseText === null ? { exists: false } : { exists: true, bytes: Buffer.byteLength(licenseText) }
@@ -253,7 +266,15 @@ if (asJson) {
 } else {
   console.log(`sense-state: ${target}`)
   console.log(`  classification: ${classification}`)
-  for (const doc of [...DOCS, 'LICENSE']) console.log(`  ${artifacts[doc].exists ? '●' : '○'} ${doc}${artifacts[doc].exists && artifacts[doc].hasH1 === false ? '  (no H1)' : ''}`)
+  for (const doc of [...DOCS, 'LICENSE']) {
+    const a = artifacts[doc]
+    const notes = [
+      a.exists && a.hasH1 === false ? '(no H1)' : null,
+      a.exists && a.path && a.path !== doc ? `(at ${a.path})` : null,
+      a.exists && a.duplicates ? `(DUPLICATE: also at ${a.duplicates.join(', ')} — GitHub serves ${a.path})` : null,
+    ].filter(Boolean)
+    console.log(`  ${a.exists ? '●' : '○'} ${doc}${notes.length ? '  ' + notes.join(' ') : ''}`)
+  }
   const lintNote = !enforcement.lint.installed ? ''
     : enforcement.lint.matchesPayload ? ' (matches payload)'
     : ` (DIFFERS from payload — ${lintDrift()}: installed ${installedLintVersion ?? 'unversioned'}, payload ${payloadLintVersion ?? 'unversioned'})`

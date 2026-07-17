@@ -71,8 +71,9 @@ Into the target repo, all committed, all dependency-free:
   with License last, contiguous numbered CONVENTIONS sections, manifest Totals reconciliation,
   a marketing-voice ban, machine-checked counts against the real tree, lint ⟺ spec
   reflexivity, stable meta files, no surviving scaffold TODOs or unfilled `{{PLACEHOLDER}}`
-  tokens, and license agreement (a root license file exists, and a recognizable license text
-  must match the manifest's license field and the README's License section). Exit 1 means the
+  tokens, license agreement (a root license file exists, and a recognizable license text must
+  match the manifest's license field and the README's License section), and no governed doc
+  duplicated across the GitHub-served locations (`.github/` > root > `docs/`). Exit 1 means the
   docs drifted; exit 2 means the config is broken; every skip is a printed, named line.
 - `.repo-standard.json` — the repo's declared scope (see [The config](#the-config)).
 - `.github/workflows/test.yml` — the gate: a read-only token running every

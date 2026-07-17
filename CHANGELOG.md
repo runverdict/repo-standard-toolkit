@@ -103,6 +103,16 @@ from the first push: the standard the plugin installs is the standard it lives u
   fenced install/usage examples are exactly where template placeholders live; inline-code and
   quoted mentions stay exempt.
 
+**RS-shadow — one governed copy per doc, and sensing that knows where docs live**
+- GitHub serves README and every community health file with precedence `.github/` > root >
+  `docs/`, so a stale copy in a higher-precedence location replaces the governed one on the
+  repo page while the content checks stay green. The new `shadow` check reddens when a
+  governed doc's basename exists in more than one of the three served locations, naming which
+  copy GitHub serves. `sense-state` senses the same three locations: a doc living only in
+  `.github/` is audited (never re-scaffolded at root), the sensed path is reported, and a
+  cross-location duplicate prints a DUPLICATE warning; the skill reconciles a doc where it
+  lives and leaves resolving duplicates to the operator.
+
 **Version-directed lint upgrades**
 - The payload lint now carries a machine-readable `REPO_STANDARD_LINT_VERSION` constant
   (printed on every run, locked to the plugin version by a standing test). When an installed

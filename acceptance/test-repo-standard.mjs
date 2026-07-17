@@ -48,6 +48,9 @@
  *                    loud named skip, never a silent pass).
  *   RS-placeholders  no unfilled {{PLACEHOLDER}} token survives in a governed doc (a
  *                    hand-copied template bypasses fill-template's refusal; this catches it).
+ *   RS-shadow        no governed doc exists in more than one GitHub-served location
+ *                    (.github/ > root > docs/ — GitHub silently serves the highest-precedence
+ *                    copy, so a duplicate is served drift the other checks cannot see).
  *
  * Freshness is never age-gated: this checks STRUCTURE + CONSISTENCY + machine-verifiable facts,
  * not "is the prose old". Dependency-free: `node acceptance/test-repo-standard.mjs`.
@@ -80,7 +83,7 @@ const README_CANON_DOCS_ONLY = ['Contributing']
 const README_ORDER = ['Security', 'Background', 'Install', 'Usage', 'API', 'Maintainers', 'Thanks', 'Contributing', 'License']
 const BANNED_VOICE = ['simply', 'seamless', 'effortless', 'blazing', 'world-class', 'cutting-edge', 'revolutionary', 'game-chang', 'turnkey', 'best-in-class']
 const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
-const CHECK_IDS = ['changelog', 'lockstep', 'readme', 'conventions', 'manifest', 'voice', 'counts', 'reflexivity', 'stable-docs', 'todos', 'license', 'placeholders']
+const CHECK_IDS = ['changelog', 'lockstep', 'readme', 'conventions', 'manifest', 'voice', 'counts', 'reflexivity', 'stable-docs', 'todos', 'license', 'placeholders', 'shadow']
 
 // ─────────────────────────────────────────────────────────────────────────── runner
 let pass = 0, fail = 0, skip = 0
@@ -653,6 +656,20 @@ gate('placeholders', 'RS-placeholders no unfilled {{PLACEHOLDER}} token survives
       const m = bare.match(/\{\{[A-Z0-9_]+\}\}/)
       assert.ok(!m, `${doc}:${i + 1} carries an unfilled template placeholder ${m?.[0]} — a hand-copied template bypassed the fill engine; fill the value or delete the line: ${line.trim().slice(0, 70)}`)
     })
+  }
+})
+
+// ──────────────────────────────────────────────────────────────────────── RS-shadow
+// GitHub resolves README and every community health file with precedence .github/ > root >
+// docs/, so a copy in a higher-precedence location silently REPLACES the governed one on the
+// repo page while every content check here stays green. One copy per governed doc, wherever
+// it lives — only the three GitHub-served locations count (a README in some other subdirectory
+// is that directory's business).
+gate('shadow', 'RS-shadow no governed doc is duplicated across the GitHub-served locations (.github/ > root > docs/)', () => {
+  const basenames = new Set([DOC.readme, DOC.changelog, DOC.conventions, ...stableDocs].map((p) => p.split('/').pop()))
+  for (const name of basenames) {
+    const hits = [`.github/${name}`, name, `docs/${name}`].filter((p) => exists(p))
+    assert.ok(hits.length <= 1, `duplicate meta file: ${hits[0]} shadows ${hits.slice(1).join(' and ')} — GitHub serves ${hits[0]} (precedence .github/ > root > docs/); keep ONE governed copy and delete the rest`)
   }
 })
 

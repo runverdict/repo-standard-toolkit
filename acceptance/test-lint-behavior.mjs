@@ -315,6 +315,14 @@ expect('LB-M-placeholders-license an unfilled {{YEAR}} in the LICENSE file redde
   '✗ RS-placeholders', '{{YEAR}}')
 expect('LB-S-placeholders-named NAMING a token in backticks stays green (a mention is not an unfilled scaffold)',
   (f) => { f['README.md'] = f['README.md'].replace('Clone it.', 'Clone it. The scaffolder fills every `{{PROJECT_NAME}}` token.') }, 0)
+expect('LB-M-shadow a .github/ copy of a governed stable doc reddens RS-shadow (GitHub would serve the ungoverned copy)',
+  (f) => { f['.github/CONTRIBUTING.md'] = '# Contributing\n\nStale shadow.\n' }, 1,
+  '✗ RS-shadow', '.github/CONTRIBUTING.md shadows CONTRIBUTING.md')
+expect('LB-M-shadow-readme a docs/ copy of the README reddens RS-shadow (the root copy shadows it)',
+  (f) => { f['docs/README.md'] = '# fixture\n\nOld copy.\n' }, 1,
+  '✗ RS-shadow', 'README.md shadows docs/README.md')
+expect('LB-S-shadow-elsewhere a README in an unrelated subdirectory is not a shadow (only the three GitHub-served locations count)',
+  (f) => { f['acceptance/README.md'] = '# acceptance\n\nSuite docs.\n' }, 0)
 
 // ── the hardenings from the adversarial pass, each locked so the bypass can never reopen ──
 expect('LB-M-voice-spaced a hyphenated ban written with a space ("world class") still reddens RS-voice',

@@ -100,6 +100,9 @@ enforced by its own installed copy of `acceptance/test-repo-standard.mjs` (scope
   recognizable standard license, the plugin manifest's `license` field and the README's License
   section must name the same id. An unrecognized text is a loud named skip, never a silent
   pass.
+- **No shadowed meta files.** A governed doc exists in exactly one of `.github/`, the repo
+  root, or `docs/` — GitHub serves the highest-precedence copy, so a duplicate is served drift
+  the content checks cannot see.
 - **No unfinished scaffolds.** No `TODO(scaffold)` marker survives in a governed doc — the lint
   reddens on any left behind, so a half-written scaffold cannot pass CI while looking done.
   Naming the marker in backticks (as this line does) is a mention, not an unfinished scaffold.

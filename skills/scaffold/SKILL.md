@@ -84,7 +84,12 @@ and no AI hits the same gate.
    using the step-2 values (LICENSE uses `LICENSE-Apache-2.0.txt` or `LICENSE-MIT.txt`; the MIT
    year comes from `git log --reverse` or the operator, never from guessing). Do not pass
    `--force`: the engine refusing to overwrite means the plan is stale — re-sense instead of
-   forcing. Then replace every `TODO(scaffold)` comment with real prose grounded in the actual
+   forcing. `sense-state` reports WHERE each doc lives (`.github/` > root > `docs/`, GitHub's
+   serving precedence) — when a doc already exists at a non-root location, reconcile it there
+   and never scaffold a root copy beside it: the lint's RS-shadow reddens on a doc duplicated
+   across served locations, because GitHub silently serves the higher-precedence copy while the
+   gate checks the other. A reported DUPLICATE is the operator's to resolve (which copy is
+   truth?) — ask, never delete on your own. Then replace every `TODO(scaffold)` comment with real prose grounded in the actual
    repo — read the entry points, manifests, and code before writing Install/Usage/Background;
    SECURITY's GitHub-reporting bullet is added only when a real remote exists (its TODO says
    how), so a remote-less repo ships the email channel alone, never a fabricated link. Never
